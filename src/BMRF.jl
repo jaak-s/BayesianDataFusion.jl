@@ -1,7 +1,14 @@
 include("sampling.jl")
 include("purecg.jl")
 
-function BMRF(data::RelationData; num_latent::Int = 10, lambda_beta = 1.0, alpha = 5.0, burnin = 500, psamples = 100, class_cut = log10(200), verbose::Bool = true)
+function BMRF(data::RelationData;
+              num_latent::Int = 10,
+              lambda_beta     = 1.0,
+              alpha           = 5.0,
+              burnin   = 500,
+              psamples = 100,
+              class_cut     = log10(200),
+              verbose::Bool = true)
   correct = Float64[] 
 
   sample_u = zeros(data.num_p, num_latent)
