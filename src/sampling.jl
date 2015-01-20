@@ -58,5 +58,5 @@ function sample_beta(F, Ft, sample_u_c, Lambda_u, lambda_beta)
   for d = 1:D
     beta[:,d] = beta_list[d]
   end
-  return beta
+  return beta, Ft_y
 end
