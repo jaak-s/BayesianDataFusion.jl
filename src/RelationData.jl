@@ -20,8 +20,9 @@ function normalizeFeatures!(data::RelationData)
   return
 end
 
-function load_mf1c(ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
-                   cmp_feat_file = "chembl_19_mf1c/chembl-IC50-compound-feat.csv")
+function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
+                   cmp_feat_file  = "chembl_19_mf1c/chembl-IC50-compound-feat.csv",
+                   normalize_feat = false)
   ## reading IC50 matrix
   X = readtable(ic50_file, header=true)
   rename!(X, [:row, :col], [:compound, :target])
@@ -43,6 +44,10 @@ function load_mf1c(ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
   data.probe_vec    = probe_vec
   data.ratings_test = data.probe_vec[:,3] .< log10(200)
   data.mean_rating  = sum(Am) / size(X,1)
+
+  if normalize_feat
+    normalizeFeatures!(data)
+  end
   
   return data
 end
