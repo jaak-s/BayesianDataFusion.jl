@@ -1,5 +1,20 @@
 using DataFrames
 
+type Entity{FT,R}
+  F::FT
+  relations::Vector{R}
+  name::String
+end
+
+hasFeatures(entity::Entity) = ! isempty(entity.F)
+
+type Relation
+  data::Vector{SparseMatrixCSC{Float64,Int64}} ## sparse matrix for each mode
+  entities::Vector{Entity}
+  name::String
+  Relation(data::SparseMatrixCSC{Float64,Int64}, name::String) = new({data,data'}, Entity[], name)
+end
+
 type RelationData{XT,YT}
   F::XT
   Ft::XT
