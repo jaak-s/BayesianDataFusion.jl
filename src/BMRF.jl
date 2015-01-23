@@ -8,7 +8,8 @@ function BMRF(data::RelationData;
               burnin   = 500,
               psamples = 100,
               class_cut     = log10(200),
-              verbose::Bool = true)
+              verbose::Bool = true,
+              compute_rhs_change = false)
   correct = Float64[] 
 
   sample_u = zeros(data.num_p, num_latent)
@@ -40,6 +41,7 @@ function BMRF(data::RelationData;
   rmse_avg = 0.0
 
   local probe_rat_all
+  rhs_change = ones(burnin + psamples, num_latent)
 
   ## Gibbs sampling loop
   for i in 1 : burnin + psamples
@@ -60,9 +62,17 @@ function BMRF(data::RelationData;
     for uu = 1:data.num_p
       sample_u[uu, :] = sample_user(uu, data.Au, data.mean_rating, sample_m, alpha, mu_u + uhat[uu,:]', Lambda_u, num_latent)
     end
-    
+
     # sampling beta (using GAMBL-R trick)
-    beta = sample_beta(data.F, data.Ft, sample_u .- mu_u', Lambda_u, lambda_beta)
+    beta, rhs = sample_beta(data.F, data.Ft, sample_u .- mu_u', Lambda_u, lambda_beta)
+
+    if compute_rhs_change
+      if i > 1
+        diff = sqrt(sum( (rhs - rhs_prev) .^ 2, 1 ))
+        rhs_change[i,:] = diff ./ sqrt(sum(rhs .^ 2, 1))
+      end
+      rhs_prev = copy(rhs)
+    end
 
     # clamping maybe needed for MovieLens data
     probe_rat = pred(data.probe_vec, sample_m, sample_u, data.mean_rating)
@@ -94,5 +104,8 @@ function BMRF(data::RelationData;
   result["accuracy"]    = err_avg
   result["ROC"]         = roc_avg
   result["predictions"] = probe_rat_all
+  if compute_rhs_change
+    result["rhs_change"] = rhs_change
+  end
   return result
 end
