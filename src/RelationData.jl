@@ -32,6 +32,12 @@ type RelationData
     r  = Relation( Am, relation )
     e1 = Entity{typeof(feat1),Relation}( feat1, [r], entity1 )
     e2 = Entity{typeof(feat2),Relation}( feat2, [r], entity2 )
+    if ! isempty(feat1) && size(feat1,1) != size(Am,1)
+      throw(ArgumentError("Number of rows in feat1 $(size(feat1,1)) must equal number of rows in the relation $(size(Am,1))"))
+    end
+    if ! isempty(feat2) && size(feat2,1) != size(Am,2)
+      throw(ArgumentError("Number of rows in feat2 $(size(feat2,1)) must equal number of columns in the relation $(size(Am,2))"))
+    end
     push!(r.entities, e1)
     push!(r.entities, e2)
     return new( {e1, e2}, {r} )
