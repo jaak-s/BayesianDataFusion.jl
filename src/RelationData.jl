@@ -50,11 +50,13 @@ end
 
 import Base.show
 function show(io::IO, rd::RelationData)
+  println(io, "[Relations]")
   for r in rd.relations
-    println(io, "Relation $(r.name): ", join([e.name for e in r.entities], "--"), ", #known = ", numData(r), ", #test = ", numTest(r))
+    @printf(io, "%10s: %s, #known = %d, #test = %d\n", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r))
   end
+  println(io, "[Entities]")
   for en in rd.entities
-    println(io, "Entity $(en.name): $(en.count) with ", hasFeatures(en) ?"$(size(en.F,2)) features" :"no features"  )
+    @printf(io, "%10s: %6d with %s features\n", en.name, en.count, hasFeatures(en) ?"$(size(en.F,2))" :"no")
   end
 end
 
