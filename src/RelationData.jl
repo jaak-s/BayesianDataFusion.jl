@@ -5,6 +5,7 @@ typealias SparseMatrix SparseMatrixCSC{Float64, Int64}
 type Entity{FT,R}
   F::FT
   relations::Vector{R}
+  count::Int
   name::String
 end
 
@@ -24,14 +25,17 @@ end
 
 import Base.size
 size(r::Relation) = size(r.data[1])
+size(r::Relation, d::Int) = size(r.data[1], d)
+numData(r::Relation) = nnz(r.data[1])
+numTest(r::Relation) = size(r.test_vec, 1)
 
 type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
   function RelationData(Am::SparseMatrix; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50")
     r  = Relation( Am, relation )
-    e1 = Entity{typeof(feat1),Relation}( feat1, [r], entity1 )
-    e2 = Entity{typeof(feat2),Relation}( feat2, [r], entity2 )
+    e1 = Entity{typeof(feat1),Relation}( feat1, [r], size(r,1), entity1 )
+    e2 = Entity{typeof(feat2),Relation}( feat2, [r], size(r,2), entity2 )
     if ! isempty(feat1) && size(feat1,1) != size(Am,1)
       throw(ArgumentError("Number of rows in feat1 $(size(feat1,1)) must equal number of rows in the relation $(size(Am,1))"))
     end
@@ -41,6 +45,16 @@ type RelationData
     push!(r.entities, e1)
     push!(r.entities, e2)
     return new( {e1, e2}, {r} )
+  end
+end
+
+import Base.show
+function show(io::IO, rd::RelationData)
+  for r in rd.relations
+    println(io, "Relation $(r.name): ", join([e.name for e in r.entities], "--"), ", #known = ", numData(r), ", #test = ", numTest(r))
+  end
+  for en in rd.entities
+    println(io, "Entity $(en.name): $(en.count) with ", hasFeatures(en) ?"$(size(en.F,2)) features" :"no features"  )
   end
 end
 
