@@ -17,7 +17,7 @@ type Relation
   name::String
 
   test_vec
-  test_ratings
+  test_label::Vector{Bool}
   mean_rating::Float64
 
   Relation(data::SparseMatrix, name::String) = new({data,data'}, Entity[], name)
@@ -100,9 +100,9 @@ function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
   
   ## creating data object
   data = RelationData(Am, feat1 = F)
-  data.relations[1].test_vec     = probe_vec
-  data.relations[1].test_ratings = data.relations[1].test_vec[:,3] .< log10(200)
-  data.relations[1].mean_rating  = sum(Am) / size(X,1)
+  data.relations[1].test_vec    = probe_vec
+  data.relations[1].test_label  = data.relations[1].test_vec[:,3] .< log10(200)
+  data.relations[1].mean_rating = sum(Am) / size(X,1)
 
   if normalize_feat
     normalizeFeatures!(data.entities[1])

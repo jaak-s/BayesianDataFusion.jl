@@ -45,12 +45,12 @@ function sample_user(uu, Au, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_l
   chol(covar)' * randn(num_latent) + mu
 end
 
-function sample_beta(F, Ft, sample_u_c, Lambda_u, lambda_beta)
+function sample_beta(F, sample_u_c, Lambda_u, lambda_beta)
   N, D = size(sample_u_c)
   numF = size(F, 2)
   
   mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
-  Ft_y = Ft * (sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
+  Ft_y = F' * (sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   
   # executed in parallel
   beta_list = pmap( d -> ridge_solve(F, Ft_y[:,d], lambda_beta), 1:D )
