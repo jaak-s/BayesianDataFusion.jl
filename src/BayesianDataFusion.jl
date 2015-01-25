@@ -3,6 +3,7 @@ module BayesianDataFusion
 export RelationalData
 export BMRF
 export load_mf1c
+export IndexedDF, getData
 
 using Distributions
 using DataFrames
