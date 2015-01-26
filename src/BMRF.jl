@@ -15,29 +15,6 @@ function BMRF(data::RelationData;
   initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
   initModel!(data.entities[2], num_latent, lambda_beta = lambda_beta)
 
-  sample_u = zeros(data.entities[1].count, num_latent)
-  sample_m = zeros(data.entities[2].count, num_latent)
-
-  # Initialize hierarchical priors
-  mu_u = zeros(num_latent, 1)
-  mu_m = zeros(num_latent, 1)
-  Lambda_u = eye(num_latent)
-  Lambda_m = eye(num_latent)
-
-  # parameters of Inv-Whishart distribution (see paper for details)
-  WI_u = eye(num_latent)
-  b0_u = 2.0
-  df_u = num_latent
-  mu0_u = zeros(num_latent, 1)
-
-  WI_m = eye(num_latent)
-  b0_m = 2.0
-  df_m = num_latent
-  mu0_m = zeros(num_latent,1)
-
-  # BMRF feature parameter
-  beta = zeros(size(data.entities[1].F, 2), num_latent)
-
   verbose && println("Sampling")
   err_avg  = 0.0
   roc_avg  = 0.0
@@ -57,6 +34,7 @@ function BMRF(data::RelationData;
 
     mi.mu, mi.Lambda = rand( ConditionalNormalWishart(mi.sample, mi.mu0, mi.b0, mi.WI, num_latent) )
 
+    # sampling movie latent vectors
     for mm = 1:data.entities[2].count
       mi.sample[mm, :] = sample_user(mm, rel.data, 2, rel.mean_rating, data.entities[1].model.sample, alpha, mi.mu, mi.Lambda, num_latent)
     end
@@ -69,13 +47,14 @@ function BMRF(data::RelationData;
     uhat = data.entities[1].F * mi.beta
     mi.mu, mi.Lambda = rand( ConditionalNormalWishart(mi.sample - uhat, mi.mu0, mi.b0, mi.WI, num_latent) )
 
+    # sampling user latent vectors
     for uu = 1:data.entities[1].count
       mi.sample[uu, :] = sample_user(uu, rel.data, 1, rel.mean_rating, data.entities[2].model.sample, alpha, mi.mu + uhat[uu,:]', mi.Lambda, num_latent)
     end
 
     # sampling beta (using GAMBL-R trick)
     if hasFeatures( data.entities[1] )
-      mi.beta, rhs = sample_beta(data.entities[1].F, mi.sample .- mu_u', mi.Lambda, mi.lambda_beta)
+      mi.beta, rhs = sample_beta(data.entities[1].F, mi.sample .- mi.mu', mi.Lambda, mi.lambda_beta)
     end
 
     if compute_rhs_change
@@ -107,9 +86,9 @@ function BMRF(data::RelationData;
     rmse_avg = sqrt(mean( (rel.test_vec[:,3] - probe_rat_all) .^ 2 ))
     rmse     = sqrt(mean( (rel.test_vec[:,3] - probe_rat) .^ 2 ))
     roc_avg  = AUC_ROC(rel.test_label, -vec(probe_rat_all))
-    verbose && @printf("Iteration %d:\t avgAcc %6.4f Acc %6.4f | avgRMSE %6.4f | avgROC %6.4f | FU(%6.2f) FM(%6.2f) Fb(%6.2f) [%2.0fs]\n", i, err_avg, err, rmse_avg, roc_avg, vecnorm(sample_u), vecnorm(sample_m), vecnorm(beta), time1 - time0)
-
+    verbose && @printf("Iteration %d:\t avgAcc %6.4f Acc %6.4f | avgRMSE %6.4f | avgROC %6.4f | FU(%6.2f) FM(%6.2f) Fb(%6.2f) [%2.0fs]\n", i, err_avg, err, rmse_avg, roc_avg, vecnorm(data.entities[1].model.sample), vecnorm(data.entities[2].model.sample), vecnorm(data.entities[1].model.beta), time1 - time0)
   end
+
   result = Dict{String,Any}()
   result["num_latent"]  = num_latent
   result["RMSE"]        = rmse_avg
