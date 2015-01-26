@@ -12,6 +12,9 @@ function BMRF(data::RelationData;
               compute_rhs_change = false)
   correct = Float64[] 
 
+  initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
+  initModel!(data.entities[2], num_latent, lambda_beta = lambda_beta)
+
   sample_u = zeros(data.entities[1].count, num_latent)
   sample_m = zeros(data.entities[2].count, num_latent)
 
@@ -46,27 +49,34 @@ function BMRF(data::RelationData;
   ## Gibbs sampling loop
   for i in 1 : burnin + psamples
     time0 = time()
-    # Sample from movie hyperparams
-    mu_m, Lambda_m = rand( ConditionalNormalWishart(sample_m, vec(mu0_m), b0_m, WI_m, df_m) )
-
-    # Sample from user hyperparams
-    # for BMRF using U - data.F * beta (residual) instead of U
-    uhat = data.entities[1].F * beta
-    mu_u, Lambda_u = rand( ConditionalNormalWishart(sample_u - uhat, vec(mu0_u), b0_u, WI_u, df_u) )
 
     rel = data.relations[1]
 
+    # Sample from movie hyperparams
+    mi = data.entities[2].model
+
+    mi.mu, mi.Lambda = rand( ConditionalNormalWishart(mi.sample, mi.mu0, mi.b0, mi.WI, num_latent) )
+
     for mm = 1:data.entities[2].count
-      sample_m[mm, :] = sample_user(mm, rel.data, 2, rel.mean_rating, sample_u, alpha, mu_m, Lambda_m, num_latent)
+      mi.sample[mm, :] = sample_user(mm, rel.data, 2, rel.mean_rating, data.entities[1].model.sample, alpha, mi.mu, mi.Lambda, num_latent)
     end
 
+    # Sample from user hyperparams
+    # for BMRF using U - data.F * beta (residual) instead of U
+    mi = data.entities[1].model
+
     # BMRF, instead of mu_u using mu_u + data.F * beta    
+    uhat = data.entities[1].F * mi.beta
+    mi.mu, mi.Lambda = rand( ConditionalNormalWishart(mi.sample - uhat, mi.mu0, mi.b0, mi.WI, num_latent) )
+
     for uu = 1:data.entities[1].count
-      sample_u[uu, :] = sample_user(uu, rel.data, 1, rel.mean_rating, sample_m, alpha, mu_u + uhat[uu,:]', Lambda_u, num_latent)
+      mi.sample[uu, :] = sample_user(uu, rel.data, 1, rel.mean_rating, data.entities[2].model.sample, alpha, mi.mu + uhat[uu,:]', mi.Lambda, num_latent)
     end
 
     # sampling beta (using GAMBL-R trick)
-    beta, rhs = sample_beta(data.entities[1].F, sample_u .- mu_u', Lambda_u, lambda_beta)
+    if hasFeatures( data.entities[1] )
+      mi.beta, rhs = sample_beta(data.entities[1].F, mi.sample .- mu_u', mi.Lambda, mi.lambda_beta)
+    end
 
     if compute_rhs_change
       if i > 1
@@ -77,7 +87,7 @@ function BMRF(data::RelationData;
     end
 
     # clamping maybe needed for MovieLens data
-    probe_rat = pred(rel.test_vec, sample_m, sample_u, rel.mean_rating)
+    probe_rat = pred(rel.test_vec, data.entitites[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
     #else
     #  probe_rat = pred_clamp(probe_vec, sample_m, sample_u, mean_rating)
     #end

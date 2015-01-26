@@ -3,11 +3,49 @@ using DataFrames
 include("IndexedDF.jl")
 typealias SparseMatrix SparseMatrixCSC{Float64, Int64} 
 
+type EntityModel
+  sample::Matrix{Float64}  ## latent vectors (each row is one instance)
+
+  mu    ::Vector{Float64}  ## mean
+  Lambda::Matrix{Float64}  ## Precision matrix
+  beta  ::Matrix{Float64}  ## parameter linking features to latent
+
+  mu0   ::Vector{Float64}  ## Prior mean for NormalWishart
+  b0    ::Float64          ## Prior for NormalWishart
+  WI    ::Matrix{Float64}  ## Prior for NormalWishart
+  lambda_beta::Float64     ## Prior for beta
+
+  EntityModel() = new()
+end
+
 type Entity{FT,R}
   F::FT
   relations::Vector{R}
   count::Int
   name::String
+  model::EntityModel
+  Entity{FT,R}(F, relations, count, name) = new(F, relations, count, name)
+end
+
+## initializes the model parameters
+function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = 1.0)
+  m = EntityModel()
+  m.sample = zeros(entity.count, num_latent)
+  m.mu     = zeros(num_latent)
+  m.Lambda = eye(num_latent)
+  if hasFeatures(entity)
+    m.beta = zeros( size(entity.F, 2), num_latent )
+  else
+    m.beta = zeros( 0, num_latent )
+  end
+
+  m.mu0    = zeros(num_latent)
+  m.b0     = 2.0
+  m.WI     = eye(num_latent)
+  m.lambda_beta = lambda_beta
+
+  entity.model = m
+  return nothing
 end
 
 hasFeatures(entity::Entity) = ! isempty(entity.F)
