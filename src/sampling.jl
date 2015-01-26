@@ -21,20 +21,12 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
   A.rowval[r], A.nzval[r]
 end
 
-function sample_movie(mm, Am, mean_rating, sample_u, alpha, mu_m, Lambda_m, num_latent)
-  ff, v = grab_col(Am, mm)
-  rr = v - mean_rating
-  MM = sample_u[ff,:]
+function sample_user(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent)
+  #ff, v = grab_col(Au, uu)
+  df = getData(Au, mode, uu)
+  ff = df[:, mode == 1 ? 2 : 1]
+  v  = array( df[:, end] )
 
-  covar = inv(Lambda_m + alpha * MM'*MM)
-  mu = covar * (alpha * MM'*rr + Lambda_m * mu_m)
-
-  # Sample from normal distribution
-  chol(covar)' * randn(num_latent) + mu
-end
-
-function sample_user(uu, Au, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent)
-  ff, v = grab_col(Au, uu)
   rr = v - mean_rating
   MM = sample_m[ff,:]
 

@@ -55,13 +55,14 @@ function BMRF(data::RelationData;
     mu_u, Lambda_u = rand( ConditionalNormalWishart(sample_u - uhat, vec(mu0_u), b0_u, WI_u, df_u) )
 
     rel = data.relations[1]
+
     for mm = 1:data.entities[2].count
-      sample_m[mm, :] = sample_user(mm, rel.data[1], rel.mean_rating, sample_u, alpha, mu_m, Lambda_m, num_latent)
+      sample_m[mm, :] = sample_user(mm, rel.data, 2, rel.mean_rating, sample_u, alpha, mu_m, Lambda_m, num_latent)
     end
 
     # BMRF, instead of mu_u using mu_u + data.F * beta    
     for uu = 1:data.entities[1].count
-      sample_u[uu, :] = sample_user(uu, rel.data[2], rel.mean_rating, sample_m, alpha, mu_u + uhat[uu,:]', Lambda_u, num_latent)
+      sample_u[uu, :] = sample_user(uu, rel.data, 1, rel.mean_rating, sample_m, alpha, mu_u + uhat[uu,:]', Lambda_u, num_latent)
     end
 
     # sampling beta (using GAMBL-R trick)
