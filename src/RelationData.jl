@@ -21,10 +21,10 @@ end
 type Entity{FT,R}
   F::FT
   relations::Vector{R}
-  count::Int
+  count::Int64
   name::String
   model::EntityModel
-  Entity{FT,R}(F, relations, count, name) = new(F, relations, count, name)
+  Entity{FT,R}(F::FT, relations::Vector{R}, count::Int64, name::String) = new(F, relations, count, name)
 end
 
 ## initializes the model parameters

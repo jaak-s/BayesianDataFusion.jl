@@ -87,7 +87,7 @@ function BMRF(data::RelationData;
     end
 
     # clamping maybe needed for MovieLens data
-    probe_rat = pred(rel.test_vec, data.entitites[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
+    probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
     #else
     #  probe_rat = pred_clamp(probe_vec, sample_m, sample_u, mean_rating)
     #end
