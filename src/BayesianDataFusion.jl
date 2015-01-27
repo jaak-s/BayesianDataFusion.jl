@@ -1,6 +1,6 @@
 module BayesianDataFusion
 
-export RelationalData
+export RelationData
 export BMRF
 export load_mf1c
 export IndexedDF, getData

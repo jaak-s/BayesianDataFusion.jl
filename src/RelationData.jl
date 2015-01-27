@@ -55,11 +55,11 @@ type Relation
   entities::Vector{Entity}
   name::String
 
-  test_vec
+  test_vec::DataFrame
   test_label::Vector{Bool}
   mean_rating::Float64
 
-  Relation(data::IndexedDF, name::String) = new(data, Entity[], name)
+  Relation(data::IndexedDF, name::String) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data))
 end
 
 import Base.size
@@ -71,6 +71,7 @@ numTest(r::Relation) = size(r.test_vec, 1)
 type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
+
   function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50")
     r  = Relation( Am, relation )
     e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1 )
@@ -85,6 +86,20 @@ type RelationData
     push!(r.entities, e2)
     return new( {e1, e2}, {r} )
   end
+end
+
+function RelationData(Am::DataFrame; kw...)
+  dims = [maximum(Am[:,i]) for i in 1 : size(Am,2)-1]
+  idf  = IndexedDF(Am, dims)
+  return RelationData(idf; kw...)
+end
+
+function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
+  dims = size(M)
+  cols = rep([1:size(M,2)], M.colptr[2:end] - M.colptr[1:end-1])
+  df   = DataFrame( row=M.rowval, col=cols, value=nonzeros(M) )
+  idf  = IndexedDF(df, dims)
+  return RelationData(idf; kw...)
 end
 
 import Base.show
@@ -130,7 +145,6 @@ function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
   data = RelationData(Xi, feat1 = F)
   data.relations[1].test_vec    = probe_vec
   data.relations[1].test_label  = data.relations[1].test_vec[:,3] .< log10(200)
-  data.relations[1].mean_rating = sum(X[:value]) / size(X,1)
 
   if normalize_feat
     normalizeFeatures!(data.entities[1])
