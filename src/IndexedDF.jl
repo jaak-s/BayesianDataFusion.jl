@@ -18,6 +18,8 @@ type IndexedDF
   end
 end
 
+IndexedDF(df::DataFrame, dims::Tuple) = IndexedDF(df, Int64[i for i in dims])
+
 function getData(idf::IndexedDF, mode::Int64, i::Int64)
   idf.df[ idf.index[mode][i], :]
 end
