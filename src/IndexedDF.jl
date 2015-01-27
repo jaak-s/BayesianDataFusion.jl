@@ -21,6 +21,14 @@ end
 IndexedDF(df::DataFrame, dims::Tuple) = IndexedDF(df, Int64[i for i in dims])
 
 valueMean(idf::IndexedDF) = mean(idf.df[:,end])
+import Base.size
+size(idf::IndexedDF) = tuple( [length(i) for i in idf.index]... )
+size(idf::IndexedDF, i::Int64) = length(idf.index[i])
+
+function removeRows(idf::IndexedDF, rows)
+  df = idf.df[setdiff(1:size(idf,1), rows), :]
+  return IndexedDF(df, size(idf))
+end
 
 function getData(idf::IndexedDF, mode::Int64, i::Int64)
   idf.df[ idf.index[mode][i], :]

@@ -72,8 +72,17 @@ type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
 
-  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50")
-    r  = Relation( Am, relation )
+  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, cutoff=log10(200))
+    local r
+    if ntest > 0
+      test_vec = Am.df[ [], : ]
+      test_id  = sample(1:size(Am.df,1), ntest; replace=false)
+      test_vec = array(Am.df[test_id,:])
+      Am = removeRows(Am, test_id)
+      r  = Relation( Am, Entity[], relation, test_vec, test_vec[:,end] .< cutoff, mean(test_vec[:,end]) )
+    else
+      r  = Relation( Am, relation )
+    end
     e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1 )
     e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2 )
     if ! isempty(feat1) && size(feat1,1) != size(r,1)
