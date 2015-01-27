@@ -3,7 +3,7 @@ module BayesianDataFusion
 export IndexedDF, getData, removeSamples
 export RelationData
 export Relation, numData, numTest, assignToTest!
-export Entity, initModel!
+export Entity
 export BMRF
 export load_mf1c
 

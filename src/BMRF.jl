@@ -8,7 +8,8 @@ function BMRF(data::RelationData;
               burnin        = 500,
               psamples      = 200,
               class_cut     = log10(200),
-              verbose::Bool = true)
+              verbose::Bool = true,
+              clamp::Vector{Float64} = Float64[])
   correct = Float64[] 
 
   initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
@@ -56,10 +57,14 @@ function BMRF(data::RelationData;
     end
 
     # clamping maybe needed for MovieLens data
-    probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
-    #else
-    #  probe_rat = pred_clamp(probe_vec, sample_m, sample_u, mean_rating)
-    #end
+    local probe_rat
+    if isempty(clamp)
+      probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
+    else
+      probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
+      probe_rat[ probe_rat .< clamp[1] ] = clamp[1]
+      probe_rat[ probe_rat .> clamp[2] ] = clamp[2]
+    end
 
     if i > burnin
       probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
