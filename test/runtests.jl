@@ -5,6 +5,7 @@ using DataFrames
 
 # IndexedDF
 X = IndexedDF(DataFrame(A=[2,2,3], B=[1,3,4], C=[0., -1., 0.5]), [4,4])
+@test nnz(X) == 3
 @test size(getData(X, 1, 1)) == (0,3)
 @test size(getData(X, 1, 4)) == (0,3)
 
@@ -22,6 +23,18 @@ X2 = IndexedDF(DataFrame(A=[2,2,3], B=[1,3,4], C=[0., -1., 0.5]), (4,4))
 @test size(X2) == (4,4)
 
 # testing removing rows
-X3 = removeRows(X2, [2])
-@test X3.nnz == 1
+X3 = removeSamples(X2, [2])
+@test nnz(X3) == 2
 @test size(X3) == (4,4)
+x12 = getData(X3, 1, 2)
+@test size(x12) == (1,3)
+
+# testing RelationData from sparse matrix
+Y  = sprand(15,10, 0.1)
+rd = RelationData(Y, class_cut = 0.5)
+assignToTest!(rd.relations[1], 2) 
+@test numTest(rd.relations[1]) == 2
+@test length(rd.relations[1].test_label) == 2
+
+# running the data
+result = BMRF(rd, burnin = 50, psamples = 50, verbose = false)

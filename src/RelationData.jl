@@ -59,30 +59,33 @@ type Relation
   test_label::Vector{Bool}
   mean_rating::Float64
 
-  Relation(data::IndexedDF, name::String) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data))
+  class_cut::Float64
+
+  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut)
 end
 
 import Base.size
 size(r::Relation) = [length(x) for x in r.data.index]
 size(r::Relation, d::Int) = length(r.data.index[d])
-numData(r::Relation) = r.data.nnz
+numData(r::Relation) = nnz(r.data)
 numTest(r::Relation) = size(r.test_vec, 1)
+
+function assignToTest!(r::Relation, ntest::Int64)
+  test_id  = sample(1:size(r.data.df,1), ntest; replace=false)
+  test_vec = array(r.data.df[test_id, :])
+  r.data   = removeSamples(r.data, test_id)
+  r.test_vec    = test_vec
+  r.test_label  = r.test_vec[:,end] .< r.class_cut
+  r.mean_rating = valueMean(r.data)
+  nothing
+end
 
 type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
 
-  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, cutoff=log10(200))
-    local r
-    if ntest > 0
-      test_vec = Am.df[ [], : ]
-      test_id  = sample(1:size(Am.df,1), ntest; replace=false)
-      test_vec = array(Am.df[test_id,:])
-      Am = removeRows(Am, test_id)
-      r  = Relation( Am, Entity[], relation, test_vec, test_vec[:,end] .< cutoff, mean(test_vec[:,end]) )
-    else
-      r  = Relation( Am, relation )
-    end
+  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200))
+    r  = Relation( Am, relation, class_cut )
     e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1 )
     e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2 )
     if ! isempty(feat1) && size(feat1,1) != size(r,1)

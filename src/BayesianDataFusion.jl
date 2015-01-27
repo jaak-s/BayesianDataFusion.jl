@@ -1,9 +1,11 @@
 module BayesianDataFusion
 
+export IndexedDF, getData, removeSamples
 export RelationData
+export Relation, numData, numTest, assignToTest!
+export Entity
 export BMRF
 export load_mf1c
-export IndexedDF, getData
 
 using Distributions
 using DataFrames

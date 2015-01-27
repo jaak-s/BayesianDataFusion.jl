@@ -3,7 +3,6 @@ using DataFrames
 type IndexedDF
   df::DataFrame
   index::Vector{Vector{Vector{Int64}}}
-  nnz::Int64
 
   function IndexedDF(df::DataFrame, dims::Vector{Int64})
     ## indexing all columns D - 1 columns (integers)
@@ -14,7 +13,7 @@ type IndexedDF
         push!(index[mode][j], i)
       end
     end
-    new(df, index, size(df,1))
+    new(df, index)
   end
 end
 
@@ -25,8 +24,11 @@ import Base.size
 size(idf::IndexedDF) = tuple( [length(i) for i in idf.index]... )
 size(idf::IndexedDF, i::Int64) = length(idf.index[i])
 
-function removeRows(idf::IndexedDF, rows)
-  df = idf.df[setdiff(1:size(idf,1), rows), :]
+import Base.nnz
+nnz(idf::IndexedDF) = size(idf.df, 1)
+
+function removeSamples(idf::IndexedDF, samples)
+  df = idf.df[ setdiff(1:size(idf.df, 1), samples), :]
   return IndexedDF(df, size(idf))
 end
 
