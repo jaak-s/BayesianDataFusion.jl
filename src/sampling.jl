@@ -2,6 +2,13 @@ function pred(probe_vec, sample_m, sample_u, mean_rating)
   sum(sample_m[probe_vec[:,2],:].*sample_u[probe_vec[:,1],:],2) + mean_rating
 end
 
+function makeClamped(x, clamp::Vector{Float64})
+  x2 = copy(x)
+  x2[x2 .< clamp[1]] = clamp[1]
+  x2[x2 .> clamp[2]] = clamp[2]
+  return x2
+end
+
 function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, kappa::Real, T::Matrix{Float64}, nu::Real)
   N = size(U, 1)
   Ū = mean(U,1)
