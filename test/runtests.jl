@@ -32,7 +32,7 @@ x12 = getData(X3, 1, 2)
 # testing RelationData from sparse matrix
 Y  = sprand(15,10, 0.1)
 rd = RelationData(Y, class_cut = 0.5)
-assignToTest!(rd.relations[1], 2) 
+assignToTest!(rd.relations[1], 2)
 @test numTest(rd.relations[1]) == 2
 @test length(rd.relations[1].test_label) == 2
 
