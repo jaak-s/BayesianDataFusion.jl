@@ -37,4 +37,4 @@ assignToTest!(rd.relations[1], 2)
 @test length(rd.relations[1].test_label) == 2
 
 # running the data
-result = BMRF(rd, burnin = 50, psamples = 50, verbose = false)
+result = BMRF(rd, burnin = 10, psamples = 10, verbose = false)
