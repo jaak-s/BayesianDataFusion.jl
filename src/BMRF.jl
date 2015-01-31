@@ -68,7 +68,7 @@ function BMRF(data::RelationData;
     end
 
     time1    = time()
-    haveTest = size(rel.test_label,1) > 0
+    haveTest = numTest(rel) > 0
 
     correct  = (rel.test_label .== (probe_rat_all .< class_cut) )
     err_avg  = mean(correct)
@@ -85,9 +85,23 @@ function BMRF(data::RelationData;
 
   result = Dict{String,Any}()
   result["num_latent"]  = num_latent
+  result["burnin"]      = burnin
+  result["psamples"]    = psamples
+  result["lambda_beta"] = lambda_beta
   result["RMSE"]        = rmse_avg
   result["accuracy"]    = err_avg
   result["ROC"]         = roc_avg
-  result["predictions"] = clamped_rat_all
+  if numTest(data.relations[1]) > 0
+    rel = data.relations[1]
+    result["predictions"] = copy(rel.test_vec)
+    result["predictions"][:pred] = vec(clamped_rat_all)
+    train_count = zeros(Int, numTest(rel), length(size(rel)) )
+    for i in 1:numTest(rel)
+      for mode in 1:length(size(rel))
+        train_count[i,mode] = getCount(rel.data, mode, rel.test_vec[i,mode])
+      end
+    end
+    result["train_counts"] = convert( DataFrame, train_count )
+  end
   return result
 end

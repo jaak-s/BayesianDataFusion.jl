@@ -32,6 +32,5 @@ function removeSamples(idf::IndexedDF, samples)
   return IndexedDF(df, size(idf))
 end
 
-function getData(idf::IndexedDF, mode::Int64, i::Int64)
-  idf.df[ idf.index[mode][i], :]
-end
+getData(idf::IndexedDF, mode::Int64, i::Int64)  = idf.df[ idf.index[mode][i], :]
+getCount(idf::IndexedDF, mode::Int64, i::Int64) = length( idf.index[mode][i] )

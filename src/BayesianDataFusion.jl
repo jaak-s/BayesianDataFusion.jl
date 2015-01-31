@@ -1,6 +1,6 @@
 module BayesianDataFusion
 
-export IndexedDF, getData, removeSamples
+export IndexedDF, getData, getCount, removeSamples
 export RelationData
 export Relation, numData, numTest, assignToTest!
 export Entity

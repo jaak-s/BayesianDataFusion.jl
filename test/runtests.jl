@@ -28,6 +28,7 @@ X3 = removeSamples(X2, [2])
 @test size(X3) == (4,4)
 x12 = getData(X3, 1, 2)
 @test size(x12) == (1,3)
+@test size(x12,1) == getCount(X3, 1, 2)
 
 # testing RelationData from sparse matrix
 Y  = sprand(15,10, 0.1)
@@ -38,3 +39,4 @@ assignToTest!(rd.relations[1], 2)
 
 # running the data
 result = BMRF(rd, burnin = 10, psamples = 10, verbose = false)
+@test size(result["predictions"],1) == 2
