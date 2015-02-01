@@ -4,7 +4,6 @@ include("purecg.jl")
 function BMRF(data::RelationData;
               num_latent::Int = 10,
               lambda_beta     = 1.0,
-              alpha           = 5.0,
               burnin        = 500,
               psamples      = 200,
               class_cut     = log10(200),
@@ -48,7 +47,7 @@ function BMRF(data::RelationData;
       # latent vectors
       for mm = 1:data.entities[j].count
         mu_mm = hasFeatures(data.entities[j]) ? mj.mu + uhat[mm,:]' : mj.mu
-        mj.sample[mm, :] = sample_user(mm, rel.data, j, rel.mean_rating, data.entities[j2].model.sample, alpha, mu_mm, mj.Lambda, num_latent)
+        mj.sample[mm, :] = sample_user(mm, rel.data, j, rel.mean_rating, data.entities[j2].model.sample, rel.model.alpha, mu_mm, mj.Lambda, num_latent)
       end
 
       if hasFeatures( data.entities[j] )

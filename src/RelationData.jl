@@ -50,6 +50,10 @@ end
 
 hasFeatures(entity::Entity) = ! isempty(entity.F)
 
+type RelationModel
+  alpha::Float64
+end
+
 type Relation
   data::IndexedDF
   entities::Vector{Entity}
@@ -58,10 +62,11 @@ type Relation
   test_vec::DataFrame
   test_label::Vector{Bool}
   mean_rating::Float64
-
   class_cut::Float64
 
-  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut)
+  model::RelationModel
+
+  Relation(data::IndexedDF, name::String, class_cut=0.0, alpha=5.0) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
 end
 
 import Base.size
@@ -84,8 +89,8 @@ type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
 
-  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200))
-    r  = Relation( Am, relation, class_cut )
+  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0)
+    r  = Relation( Am, relation, class_cut, alpha )
     e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1 )
     e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2 )
     if ! isempty(feat1) && size(feat1,1) != size(r,1)
