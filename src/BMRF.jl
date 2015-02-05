@@ -8,7 +8,8 @@ function BMRF(data::RelationData;
               psamples      = 200,
               class_cut     = log10(200),
               verbose::Bool = true,
-              clamp::Vector{Float64} = Float64[])
+              clamp::Vector{Float64}  = Float64[],
+              f::Union(Function,Bool) = false)
   correct = Float64[] 
 
   initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
@@ -20,6 +21,7 @@ function BMRF(data::RelationData;
   rmse_avg = 0.0
 
   local probe_rat_all, clamped_rat_all
+  f_output = Any[]
 
   ## Gibbs sampling loop
   for i in 1 : burnin + psamples
@@ -66,6 +68,11 @@ function BMRF(data::RelationData;
       counter_prob  = 1
     end
 
+    if typeof(f) <: Function
+      f_out = f( Matrix{Float64}[en.model.sample for en in data.entities] )
+      push!(f_output, f_out)
+    end
+
     time1    = time()
     haveTest = numTest(rel) > 0
 
@@ -101,6 +108,9 @@ function BMRF(data::RelationData;
       end
     end
     result["train_counts"] = convert( DataFrame, train_count )
+  end
+  if typeof(f) <: Function
+    result["f_output"] = f_output
   end
   return result
 end

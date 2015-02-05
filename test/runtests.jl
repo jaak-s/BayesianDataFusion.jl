@@ -40,3 +40,8 @@ assignToTest!(rd.relations[1], 2)
 # running the data
 result = BMRF(rd, burnin = 10, psamples = 10, verbose = false)
 @test size(result["predictions"],1) == 2
+
+# custom function on latent variables
+f1(a) = length(a)
+result2 = BMRF(rd, burnin = 5, psamples = 5, verbose = false, f = f1)
+@test length(result2["f_output"]) == 5 + 5
