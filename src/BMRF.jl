@@ -68,7 +68,7 @@ function BMRF(data::RelationData;
       counter_prob  = 1
     end
 
-    if typeof(f) <: Function
+    if typeof(f) <: Function && i > burnin
       f_out = f( Matrix{Float64}[en.model.sample for en in data.entities] )
       push!(f_output, f_out)
     end
