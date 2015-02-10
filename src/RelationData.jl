@@ -131,7 +131,7 @@ import Base.show
 function show(io::IO, rd::RelationData)
   println(io, "[Relations]")
   for r in rd.relations
-    @printf(io, "%10s: %s, #known = %d, #test = %d\n", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r))
+    @printf(io, "%10s: %s, #known = %d, #test = %d, α = %s\n", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r), r.model.alpha_sample ?"sample" :@sprintf("%.2f", r.model.alpha))
   end
   println(io, "[Entities]")
   for en in rd.entities
@@ -147,7 +147,8 @@ end
 
 function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
                    cmp_feat_file  = "chembl_19_mf1c/chembl-IC50-compound-feat.csv",
-                   normalize_feat = false)
+                   normalize_feat = false,
+                   alpha_sample   = false)
   ## reading IC50 matrix
   X = readtable(ic50_file, header=true)
   rename!(X, [:row, :col], [:compound, :target])
@@ -167,7 +168,7 @@ function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
   Xi = IndexedDF(X, dims)
   
   ## creating data object
-  data = RelationData(Xi, feat1 = F)
+  data = RelationData(Xi, feat1 = F, alpha_sample = alpha_sample)
   data.relations[1].test_vec    = probe_vec
   data.relations[1].test_label  = data.relations[1].test_vec[:,3] .< log10(200)
 

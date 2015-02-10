@@ -94,7 +94,7 @@ function BMRF(data::RelationData;
     rmse_avg = haveTest ? sqrt(mean( (rel.test_vec[:,3] - clamped_rat_all) .^ 2 )) : NaN
     rmse     = haveTest ? sqrt(mean( (rel.test_vec[:,3] - clamped_rat) .^ 2 ))     : NaN
     roc_avg  = haveTest ? AUC_ROC(rel.test_label, -vec(probe_rat_all))             : NaN
-    verbose && @printf("Iteration %d:\t avgAcc %6.4f Acc %6.4f | avgRMSE %6.4f | avgROC %6.4f | FU(%6.2f) FM(%6.2f) Fb(%6.2f) [%2.0fs]\n", i, err_avg, err, rmse_avg, roc_avg, vecnorm(data.entities[1].model.sample), vecnorm(data.entities[2].model.sample), vecnorm(data.entities[1].model.beta), time1 - time0)
+    verbose && @printf("Iter %3d: Acc %6.4f | avgAcc %6.4f avgROC %6.4f avgRMSE %6.4f | FU(%6.2f) FM(%6.2f) Fb(%6.2f) α=%2.1f [%2.0fs]\n", i, err, err_avg, roc_avg, rmse_avg, vecnorm(data.entities[1].model.sample), vecnorm(data.entities[2].model.sample), vecnorm(data.entities[1].model.beta), data.relations[1].model.alpha, time1 - time0)
   end
 
   result = Dict{String,Any}()
