@@ -43,8 +43,8 @@ result = BMRF(rd, burnin = 10, psamples = 10, verbose = false)
 
 # custom function on latent variables
 f1(a) = length(a)
-result2 = BMRF(rd, burnin = 5, psamples = 5, verbose = false, f = f1)
-@test length(result2["f_output"]) == 5 + 5
+result2 = BMRF(rd, burnin = 5, psamples = 6, verbose = false, f = f1)
+@test length(result2["f_output"]) == 6
 
 # pred for training set
 ytrain_hat = pred(rd.relations[1])
