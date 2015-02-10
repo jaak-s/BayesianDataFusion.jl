@@ -2,6 +2,12 @@ function pred(probe_vec, sample_m, sample_u, mean_rating)
   sum(sample_m[probe_vec[:,2],:].*sample_u[probe_vec[:,1],:],2) + mean_rating
 end
 
+function pred(r::Relation)
+  vec(sum(
+    r.entities[1].model.sample[getMode(r.data, 1),:] .*
+    r.entities[2].model.sample[getMode(r.data, 2),:], 2)) + r.mean_rating
+end
+
 function makeClamped(x, clamp::Vector{Float64})
   x2 = copy(x)
   x2[x2 .< clamp[1]] = clamp[1]
@@ -21,6 +27,13 @@ function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, kappa
   nu_c = nu + N
 
   NormalWishart(vec(mu_c), kappa_c, T_c, nu_c)
+end
+
+function sample_alpha(alpha_lambda0::Float64, alpha_nu0::Float64, err::Vector{Float64})
+  Λ  = alpha_lambda0 * eye(1)
+  n  = length(err)
+  SW = inv(inv(Λ) + err' * err)
+  return rand(Wishart(alpha_nu0 + n, SW))[1]
 end
 
 function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)

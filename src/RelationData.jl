@@ -51,8 +51,15 @@ end
 hasFeatures(entity::Entity) = ! isempty(entity.F)
 
 type RelationModel
+  alpha_sample::Bool
+  alpha_nu0::Float64
+  alpha_lambda0::Float64
+
   alpha::Float64
 end
+
+RelationModel(alpha::Float64) = RelationModel(false, 0.0, 1.0, alpha)
+RelationModel() = RelationModel(true, 2, 1.0, NaN)
 
 type Relation
   data::IndexedDF
@@ -66,7 +73,8 @@ type Relation
 
   model::RelationModel
 
-  Relation(data::IndexedDF, name::String, class_cut=0.0, alpha=5.0) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel())
 end
 
 import Base.size
@@ -89,8 +97,8 @@ type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
 
-  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0)
-    r  = Relation( Am, relation, class_cut, alpha )
+  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false)
+    r  = alpha_sample ?Relation(Am, relation, class_cut) :Relation(Am, relation, class_cut, alpha)
     e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1 )
     e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2 )
     if ! isempty(feat1) && size(feat1,1) != size(r,1)

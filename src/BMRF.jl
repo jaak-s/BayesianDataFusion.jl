@@ -10,7 +10,7 @@ function BMRF(data::RelationData;
               verbose::Bool = true,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
-  correct = Float64[] 
+  correct = Float64[]
 
   initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
   initModel!(data.entities[2], num_latent, lambda_beta = lambda_beta)
@@ -27,9 +27,17 @@ function BMRF(data::RelationData;
   for i in 1 : burnin + psamples
     time0 = time()
 
+    # sample relation model (alpha)
+    for r in data.relations
+      r.model.alpha_sample || continue
+
+      err = pred(r) - getValues(r.data)
+      r.model.alpha = sample_alpha(r.model.alpha_lambda0, r.model.alpha_nu0, err)
+    end
+
     rel = data.relations[1]
 
-    # Sample from movie hyperparams
+    # Sample from entity hyperparams
     for j in 1:length(data.entities)
       j2 = (j == 1) ? 2 : 1
       mj = data.entities[j].model

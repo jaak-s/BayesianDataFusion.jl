@@ -45,3 +45,14 @@ result = BMRF(rd, burnin = 10, psamples = 10, verbose = false)
 f1(a) = length(a)
 result2 = BMRF(rd, burnin = 5, psamples = 5, verbose = false, f = f1)
 @test length(result2["f_output"]) == 5 + 5
+
+# pred for training set
+ytrain_hat = pred(rd.relations[1])
+@test length(ytrain_hat) == numData(rd.relations[1])
+row = rd.relations[1].data.df[1,1]
+col = rd.relations[1].data.df[1,2]
+y1 = sum(rd.entities[1].model.sample[row,:] .* rd.entities[2].model.sample[col,:]) + rd.relations[1].mean_rating
+@test_approx_eq y1 ytrain_hat[1]
+
+# alpha sampling
+include("alpha_sampling.jl")
