@@ -1,5 +1,7 @@
 using DataFrames
 
+export IndexedDF, getData, getCount, removeSamples, getValues
+
 type IndexedDF
   df::DataFrame
   index::Vector{Vector{Vector{Int64}}}

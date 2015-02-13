@@ -3,6 +3,11 @@ using DataFrames
 include("IndexedDF.jl")
 typealias SparseMatrix SparseMatrixCSC{Float64, Int64} 
 
+export RelationData
+export Relation, numData, numTest, assignToTest!
+export Entity
+export load_mf1c
+
 type EntityModel
   sample::Matrix{Float64}  ## latent vectors (each row is one instance)
 

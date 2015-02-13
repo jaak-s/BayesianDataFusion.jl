@@ -1,6 +1,8 @@
 include("sampling.jl")
 include("purecg.jl")
 
+export BMRF
+
 function BMRF(data::RelationData;
               num_latent::Int = 10,
               lambda_beta     = 1.0,

@@ -1,3 +1,5 @@
+export pred
+
 function pred(probe_vec, sample_m, sample_u, mean_rating)
   sum(sample_m[probe_vec[:,2],:].*sample_u[probe_vec[:,1],:],2) + mean_rating
 end
