@@ -29,6 +29,8 @@ type Entity{FT,R}
   name::String
 
   lambda_beta::Float64
+
+  relation_pos::Vector{Int64}
   
   model::EntityModel
   Entity{FT,R}(F::FT, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0) = new(F, relations, count, name, lb)
@@ -37,6 +39,8 @@ end
 ## initializes the model parameters
 function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = NaN)
   m = EntityModel()
+  entity.model = m
+
   m.sample = zeros(entity.count, num_latent)
   m.mu     = zeros(num_latent)
   m.Lambda = eye(num_latent)
@@ -54,7 +58,8 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
     entity.lambda_beta = lambda_beta
   end
 
-  entity.model = m
+  entity.relation_pos = Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ]
+
   return nothing
 end
 
