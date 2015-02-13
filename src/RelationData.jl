@@ -15,10 +15,9 @@ type EntityModel
   Lambda::Matrix{Float64}  ## Precision matrix
   beta  ::Matrix{Float64}  ## parameter linking features to latent
 
-  mu0   ::Vector{Float64}  ## Prior mean for NormalWishart
-  b0    ::Float64          ## Prior for NormalWishart
-  WI    ::Matrix{Float64}  ## Prior for NormalWishart
-  lambda_beta::Float64     ## Prior for beta
+  mu0   ::Vector{Float64}  ## Hyper-prior mean for NormalWishart
+  b0    ::Float64          ## Hyper-prior for NormalWishart
+  WI    ::Matrix{Float64}  ## Hyper-prior for NormalWishart
 
   EntityModel() = new()
 end
@@ -28,12 +27,15 @@ type Entity{FT,R}
   relations::Vector{R}
   count::Int64
   name::String
+
+  lambda_beta::Float64
+  
   model::EntityModel
-  Entity{FT,R}(F::FT, relations::Vector{R}, count::Int64, name::String) = new(F, relations, count, name)
+  Entity{FT,R}(F::FT, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0) = new(F, relations, count, name, lb)
 end
 
 ## initializes the model parameters
-function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = 1.0)
+function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = NaN)
   m = EntityModel()
   m.sample = zeros(entity.count, num_latent)
   m.mu     = zeros(num_latent)
@@ -47,7 +49,10 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = 1.
   m.mu0    = zeros(num_latent)
   m.b0     = 2.0
   m.WI     = eye(num_latent)
-  m.lambda_beta = lambda_beta
+
+  if ! isnan(lambda_beta)
+    entity.lambda_beta = lambda_beta
+  end
 
   entity.model = m
   return nothing
@@ -102,10 +107,10 @@ type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
 
-  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false)
+  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false, lambda_beta=1.0)
     r  = alpha_sample ?Relation(Am, relation, class_cut) :Relation(Am, relation, class_cut, alpha)
-    e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1 )
-    e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2 )
+    e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1, lambda_beta )
+    e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2, lambda_beta )
     if ! isempty(feat1) && size(feat1,1) != size(r,1)
       throw(ArgumentError("Number of rows in feat1 $(size(feat1,1)) must equal number of rows in the relation $(size(Am,1))"))
     end
@@ -140,7 +145,8 @@ function show(io::IO, rd::RelationData)
   end
   println(io, "[Entities]")
   for en in rd.entities
-    @printf(io, "%10s: %6d with %s features\n", en.name, en.count, hasFeatures(en) ?"$(size(en.F,2))" :"no")
+    @printf(io, "%10s: %6d with %s\n", en.name, en.count, 
+      hasFeatures(en) ?@sprintf("%d features (lambda = %1.1f)", size(en.F, 2), en.lambda_beta) :"no features", )
   end
 end
 

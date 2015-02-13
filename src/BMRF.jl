@@ -5,7 +5,7 @@ export BMRF
 
 function BMRF(data::RelationData;
               num_latent::Int = 10,
-              lambda_beta     = 1.0,
+              lambda_beta     = NaN,
               burnin          = 500,
               psamples        = 200,
               class_cut       = log10(200),
@@ -63,7 +63,7 @@ function BMRF(data::RelationData;
       end
 
       if hasFeatures( data.entities[j] )
-        mj.beta, rhs = sample_beta(data.entities[j].F, mj.sample .- mj.mu', mj.Lambda, mj.lambda_beta)
+        mj.beta, rhs = sample_beta(data.entities[j].F, mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta)
       end
     end
 
@@ -103,7 +103,7 @@ function BMRF(data::RelationData;
   result["num_latent"]  = num_latent
   result["burnin"]      = burnin
   result["psamples"]    = psamples
-  result["lambda_beta"] = lambda_beta
+  result["lambda_beta"] = data.entities[1].lambda_beta
   result["RMSE"]        = rmse_avg
   result["accuracy"]    = err_avg
   result["ROC"]         = roc_avg
