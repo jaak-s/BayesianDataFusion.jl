@@ -4,10 +4,10 @@ include("purecg.jl")
 function BMRF(data::RelationData;
               num_latent::Int = 10,
               lambda_beta     = 1.0,
-              burnin        = 500,
-              psamples      = 200,
-              class_cut     = log10(200),
-              verbose::Bool = true,
+              burnin          = 500,
+              psamples        = 200,
+              class_cut       = log10(200),
+              verbose::Bool   = true,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
