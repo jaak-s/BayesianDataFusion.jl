@@ -30,8 +30,6 @@ type Entity{FT,R}
 
   lambda_beta::Float64
 
-  relation_pos::Vector{Int64}
-  
   model::EntityModel
   Entity{FT,R}(F::FT, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0) = new(F, relations, count, name, lb)
 end
@@ -57,8 +55,6 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
   if ! isnan(lambda_beta)
     entity.lambda_beta = lambda_beta
   end
-
-  entity.relation_pos = Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ]
 
   return nothing
 end

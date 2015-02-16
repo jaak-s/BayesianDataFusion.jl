@@ -17,6 +17,11 @@ function BMRF(data::RelationData;
   initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
   initModel!(data.entities[2], num_latent, lambda_beta = lambda_beta)
 
+  modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
+                     data.entities)
+  modes_other = map(entity -> Vector{Int64}[ find(en -> en != entity, r.entities) for r in entity.relations ],
+                     data.entities)
+
   verbose && println("Sampling")
   err_avg  = 0.0
   roc_avg  = 0.0

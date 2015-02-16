@@ -59,6 +59,27 @@ function sample_user(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha,
   chol(covar)' * randn(num_latent) + mu
 end
 
+function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{Int64}, modes_other)
+  Lambda_si = copy(s.model.Lambda)
+  mux       = s.model.Lambda * mu_si
+
+  for r = 1:length(s.relations)
+    rel = s.relations[r]
+    df  = getData(rel.data, modes[r], i)
+    rr  = array( df[:,end] ) - rel.mean_rating
+    modes_o1 = modes_other[r][1]
+    modes_o2 = modes_other[r][2:end]
+
+    MM = rel.entities[modes_o1].model.sample[ df[:,modes_o1], : ]
+    for j = modes_o2
+      MM .*= rel.entities[j].model.sample[ df[:,j], : ]
+    end
+    Lambda_si += rel.model.alpha * MM' * MM
+    mux       += rel.model.alpha * MM' * rr
+  end
+  # TODO
+end
+
 function sample_beta(F, sample_u_c, Lambda_u, lambda_beta)
   N, D = size(sample_u_c)
   numF = size(F, 2)
