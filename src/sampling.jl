@@ -53,13 +53,13 @@ function sample_user(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha,
   MM = sample_m[ff,:]
 
   covar = inv(Lambda_u + alpha * MM'*MM)
-  mu = covar * (alpha * MM'*rr + Lambda_u * mu_u)
+  mu    = covar * (alpha * MM'*rr + Lambda_u * mu_u)
 
   # Sample from normal distribution
   chol(covar)' * randn(num_latent) + mu
 end
 
-function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{Int64}, modes_other)
+function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_other)
   Lambda_si = copy(s.model.Lambda)
   mux       = s.model.Lambda * mu_si
 
@@ -77,7 +77,11 @@ function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{I
     Lambda_si += rel.model.alpha * MM' * MM
     mux       += rel.model.alpha * MM' * rr
   end
-  # TODO
+  covar = inv(Lambda_si)
+  mu    = covar * mux
+
+  # Sample from normal distribution
+  chol(covar)' * randn(length(mu)) + mu
 end
 
 function sample_beta(F, sample_u_c, Lambda_u, lambda_beta)

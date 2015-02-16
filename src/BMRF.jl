@@ -64,7 +64,8 @@ function BMRF(data::RelationData;
       # latent vectors
       for mm = 1:data.entities[j].count
         mu_mm = hasFeatures(data.entities[j]) ? mj.mu + uhat[mm,:]' : mj.mu
-        mj.sample[mm, :] = sample_user(mm, rel.data, j, rel.mean_rating, data.entities[j2].model.sample, rel.model.alpha, mu_mm, mj.Lambda, num_latent)
+        #mj.sample[mm, :] = sample_user(mm, rel.data, j, rel.mean_rating, data.entities[j2].model.sample, rel.model.alpha, mu_mm, mj.Lambda, num_latent)
+        mj.sample[mm, :] = sample_user2(data.entities[j], mm, mu_mm, modes[j], modes_other[j])
       end
 
       if hasFeatures( data.entities[j] )
@@ -72,7 +73,6 @@ function BMRF(data::RelationData;
       end
     end
 
-    # clamping maybe needed for MovieLens data
     probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
 
     if i > burnin
