@@ -56,3 +56,4 @@ y1 = sum(rd.entities[1].model.sample[row,:] .* rd.entities[2].model.sample[col,:
 
 # alpha sampling
 include("alpha_sampling.jl")
+#include("tensor.jl")

@@ -14,8 +14,9 @@ function BMRF(data::RelationData;
               f::Union(Function,Bool) = false)
   correct = Float64[]
 
-  initModel!(data.entities[1], num_latent, lambda_beta = lambda_beta)
-  initModel!(data.entities[2], num_latent, lambda_beta = lambda_beta)
+  for en in data.entities
+    initModel!(en, num_latent, lambda_beta = lambda_beta)
+  end
 
   modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
                      data.entities)
@@ -73,6 +74,7 @@ function BMRF(data::RelationData;
       end
     end
 
+    ## TODO, use pred based on probe_vec and relation
     probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
 
     if i > burnin

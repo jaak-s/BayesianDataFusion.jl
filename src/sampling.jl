@@ -4,10 +4,20 @@ function pred(probe_vec, sample_m, sample_u, mean_rating)
   sum(sample_m[probe_vec[:,2],:].*sample_u[probe_vec[:,1],:],2) + mean_rating
 end
 
+function pred(probe_vec, r::Relation)
+  U = r.entities[1].model.sample[probe_vec[:,1],:]
+  for i in 2:length(r.entities)
+    U .*= r.entities[i].model.sample[probe_vec[:,i],:]
+  end
+  vec(sum(U,2)) + mean_rating
+end
+
 function pred(r::Relation)
-  vec(sum(
-    r.entities[1].model.sample[getMode(r.data, 1),:] .*
-    r.entities[2].model.sample[getMode(r.data, 2),:], 2)) + r.mean_rating
+  U = r.entities[1].model.sample[getMode(r.data, 1),:]
+  for i in 2:length(r.entities)
+    U .*= r.entities[i].model.sample[getMode(r.data, i),:]
+  end
+  return vec(sum(U ,2)) + r.mean_rating
 end
 
 function makeClamped(x, clamp::Vector{Float64})
@@ -59,7 +69,7 @@ function sample_user(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha,
   chol(covar)' * randn(num_latent) + mu
 end
 
-function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_other)
+function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})
   Lambda_si = copy(s.model.Lambda)
   mux       = s.model.Lambda * mu_si
 

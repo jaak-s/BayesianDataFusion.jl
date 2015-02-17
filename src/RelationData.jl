@@ -108,6 +108,8 @@ type RelationData
   entities::Vector{Entity}
   relations::Vector{Relation}
 
+  RelationData() = new( Entity[], Relation[] )
+
   function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false, lambda_beta=1.0)
     r  = alpha_sample ?Relation(Am, relation, class_cut) :Relation(Am, relation, class_cut, alpha)
     e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1, lambda_beta )
@@ -124,10 +126,17 @@ type RelationData
   end
 end
 
-function RelationData(Am::DataFrame; kw...)
-  dims = [maximum(Am[:,i]) for i in 1 : size(Am,2)-1]
+function RelationData(Am::DataFrame; rname="R1", class_cut=log10(200), alpha=5.0)
+  dims = Int64[maximum(Am[:,i]) for i in 1 : size(Am,2)-1]
   idf  = IndexedDF(Am, dims)
-  return RelationData(idf; kw...)
+  rd   = RelationData()
+  push!(rd.relations, Relation(idf, rname, class_cut, alpha))
+  for d in 1:length(dims)
+    en = Entity{Any, Relation}( (), [rd.relations[1]], size(idf,d), "E$d")
+    push!(rd.entities, en)
+    push!(rd.relations[1].entities, en)
+  end
+  return rd
 end
 
 function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
