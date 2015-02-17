@@ -1,9 +1,5 @@
 export pred
 
-function pred(probe_vec, sample_m, sample_u, mean_rating)
-  sum(sample_m[probe_vec[:,2],:].*sample_u[probe_vec[:,1],:],2) + mean_rating
-end
-
 function pred(probe_vec, r::Relation)
   U = r.entities[1].model.sample[probe_vec[:,1],:]
   for i in 2:length(r.entities)
@@ -54,7 +50,7 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
   A.rowval[r], A.nzval[r]
 end
 
-function sample_user(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent)
+function sample_user_old(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent)
   #ff, v = grab_col(Au, uu)
   df = getData(Au, mode, uu)
   ff = df[:, mode == 1 ? 2 : 1]

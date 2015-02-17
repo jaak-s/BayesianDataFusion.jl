@@ -47,7 +47,6 @@ function BMRF(data::RelationData;
 
     # Sample from entity hyperparams
     for j in 1:length(data.entities)
-      j2 = (j == 1) ? 2 : 1
       mj = data.entities[j].model
 
       local U::Matrix{Float64}
@@ -101,8 +100,8 @@ function BMRF(data::RelationData;
     clamped_rat     = isempty(clamp) ?probe_rat     :makeClamped(probe_rat, clamp)
     clamped_rat_all = isempty(clamp) ?probe_rat_all :makeClamped(probe_rat_all, clamp)
 
-    rmse_avg = haveTest ? sqrt(mean( (rel.test_vec[:,3] - clamped_rat_all) .^ 2 )) : NaN
-    rmse     = haveTest ? sqrt(mean( (rel.test_vec[:,3] - clamped_rat) .^ 2 ))     : NaN
+    rmse_avg = haveTest ? sqrt(mean( (rel.test_vec[:,end] - clamped_rat_all) .^ 2 )) : NaN
+    rmse     = haveTest ? sqrt(mean( (rel.test_vec[:,end] - clamped_rat) .^ 2 ))     : NaN
     roc_avg  = haveTest ? AUC_ROC(rel.test_label, -vec(probe_rat_all))             : NaN
     verbose && @printf("Iter %3d: Acc %6.4f | avgAcc %6.4f avgROC %6.4f avgRMSE %6.4f | FU(%6.2f) FM(%6.2f) Fb(%6.2f) α=%2.1f [%2.0fs]\n", i, err, err_avg, roc_avg, rmse_avg, vecnorm(data.entities[1].model.sample), vecnorm(data.entities[2].model.sample), vecnorm(data.entities[1].model.beta), data.relations[1].model.alpha, time1 - time0)
   end
