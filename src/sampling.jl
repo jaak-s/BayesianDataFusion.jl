@@ -9,7 +9,7 @@ function pred(probe_vec, r::Relation)
   for i in 2:length(r.entities)
     U .*= r.entities[i].model.sample[probe_vec[:,i],:]
   end
-  vec(sum(U,2)) + mean_rating
+  vec(sum(U,2)) + r.mean_rating
 end
 
 function pred(r::Relation)
@@ -30,7 +30,8 @@ end
 function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, kappa::Real, T::Matrix{Float64}, nu::Real)
   N = size(U, 1)
   Ū = mean(U,1)
-  S = cov(U, mean=Ū)
+  cU = U .- Ū
+  S = (cU' * cU) / N
   Ū = Ū'
 
   mu_c = (kappa*mu + N*Ū) / (kappa + N)

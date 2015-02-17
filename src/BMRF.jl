@@ -75,7 +75,8 @@ function BMRF(data::RelationData;
     end
 
     ## TODO, use pred based on probe_vec and relation
-    probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
+    #probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
+    probe_rat = pred(rel.test_vec, rel)
 
     if i > burnin
       probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
