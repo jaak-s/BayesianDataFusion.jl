@@ -23,16 +23,16 @@ function makeClamped(x, clamp::Vector{Float64})
   return x2
 end
 
-function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, kappa::Real, T::Matrix{Float64}, nu::Real)
-  N = size(U, 1)
-  Ū = mean(U,1)
+function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, kappa::Real, Tinv::Matrix{Float64}, nu::Real)
+  N  = size(U, 1)
+  Ū  = mean(U,1)
   cU = U .- Ū
-  S = (cU' * cU) / N
-  Ū = Ū'
+  S  = cU' * cU
+  Ū  = Ū'
 
   mu_c = (kappa*mu + N*Ū) / (kappa + N)
   kappa_c = kappa + N
-  T_c = inv( inv(T) + N * S + (kappa * N)/(kappa + N) * (mu - Ū) * (mu - Ū)' )
+  T_c = inv( Tinv + S + (kappa * N)/(kappa + N) * (mu - Ū) * (mu - Ū)' )
   nu_c = nu + N
 
   NormalWishart(vec(mu_c), kappa_c, T_c, nu_c)

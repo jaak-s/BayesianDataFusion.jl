@@ -17,7 +17,7 @@ type EntityModel
 
   mu0   ::Vector{Float64}  ## Hyper-prior mean for NormalWishart
   b0    ::Float64          ## Hyper-prior for NormalWishart
-  WI    ::Matrix{Float64}  ## Hyper-prior for NormalWishart
+  WI    ::Matrix{Float64}  ## Hyper-prior for NormalWishart (inverse of W)
 
   EntityModel() = new()
 end
