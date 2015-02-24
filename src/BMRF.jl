@@ -51,15 +51,19 @@ function BMRF(data::RelationData;
 
       local U::Matrix{Float64}
       local uhat::Matrix{Float64}
+      nu   = num_latent
+      Tinv = mj.WI
 
       if hasFeatures(data.entities[j])
         uhat = data.entities[j].F * mj.beta
         U = mj.sample - uhat
+        nu   += size(mj.beta, 1)
+        Tinv += mj.beta' * mj.beta * data.entities[j].lambda_beta
       else
         U = mj.sample
       end
 
-      mj.mu, mj.Lambda = rand( ConditionalNormalWishart(U, mj.mu0, mj.b0, mj.WI, num_latent) )
+      mj.mu, mj.Lambda = rand( ConditionalNormalWishart(U, mj.mu0, mj.b0, Tinv, nu) )
 
       # latent vectors
       for mm = 1:data.entities[j].count
