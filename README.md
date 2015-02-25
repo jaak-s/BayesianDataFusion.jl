@@ -8,5 +8,5 @@ Implementation of data fusion methods.
 ```julia
 using BayesianDataFusion
 x = load_mf1c(normalize_feat = true)
-result = BMRF(x)
+result = macau(x)
 ```

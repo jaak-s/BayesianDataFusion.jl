@@ -5,6 +5,6 @@ using DataFrames
 
 include("ROC.jl")
 include("RelationData.jl")
-include("BMRF.jl")
+include("macau.jl")
 
 end # module

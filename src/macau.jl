@@ -1,9 +1,9 @@
 include("sampling.jl")
 include("purecg.jl")
 
-export BMRF
+export macau
 
-function BMRF(data::RelationData;
+function macau(data::RelationData;
               num_latent::Int = 10,
               lambda_beta     = NaN,
               burnin          = 500,

@@ -16,4 +16,4 @@ end
 
 rd = RelationData(df)
 assignToTest!(rd.relations[1], 10)
-result = BMRF(rd, burnin=50, psamples=10, num_latent=2, verbose=false)
+result = macau(rd, burnin=50, psamples=10, num_latent=2, verbose=false)
