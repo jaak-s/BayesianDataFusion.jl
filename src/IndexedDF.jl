@@ -20,6 +20,7 @@ type IndexedDF
 end
 
 IndexedDF(df::DataFrame, dims::Tuple) = IndexedDF(df, Int64[i for i in dims])
+IndexedDF(df::DataFrame) = IndexedDF(df, Int64[maximum(df[:,i]) for i in 1 : size(df,2)-1])
 
 valueMean(idf::IndexedDF) = mean(idf.df[:,end])
 import Base.size

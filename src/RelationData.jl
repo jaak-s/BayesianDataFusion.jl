@@ -74,6 +74,7 @@ RelationModel() = RelationModel(true, 2, 1.0, NaN)
 
 type Relation
   data::IndexedDF
+  F
   entities::Vector{Entity}
   name::String
 
@@ -84,8 +85,9 @@ type Relation
 
   model::RelationModel
 
-  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
-  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel())
+  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel())
+  Relation(data::DataFrame, name::String, class_cut=0.0) = new(IndexedDF(data), (), Entity[], name, data[[],:], Bool[], mean(data[:,end]), class_cut, RelationModel())
 end
 
 import Base.size

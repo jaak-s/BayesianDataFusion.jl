@@ -19,8 +19,11 @@ x12 = getData(X, 1, 2)
 
 # IndexedDF with tuple input
 X2 = IndexedDF(DataFrame(A=[2,2,3], B=[1,3,4], C=[0., -1., 0.5]), (4,4))
-
 @test size(X2) == (4,4)
+
+# IndexedDF with plain DataFrame
+X2a = IndexedDF(DataFrame(A=[2,2,3], B=[1,1,4], C=[0.4, -1, -9]))
+@test size(X2a) == (3,4)
 
 # testing removing rows
 X3 = removeSamples(X2, [2])
@@ -29,6 +32,10 @@ X3 = removeSamples(X2, [2])
 x12 = getData(X3, 1, 2)
 @test size(x12) == (1,3)
 @test size(x12,1) == getCount(X3, 1, 2)
+
+# creating relation from DataFrame
+a = DataFrame(A=[1,2,2,3], B=[1,3,1,4], v=[0.4, 1.0, -1.9, 1.4])
+r = Relation(a, "a")
 
 # testing RelationData from sparse matrix
 Y  = sprand(15,10, 0.1)
