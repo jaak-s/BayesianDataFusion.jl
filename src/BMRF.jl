@@ -10,6 +10,7 @@ function BMRF(data::RelationData;
               psamples        = 200,
               class_cut       = log10(200),
               verbose::Bool   = true,
+              full_lambda_u   = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
@@ -57,8 +58,10 @@ function BMRF(data::RelationData;
       if hasFeatures(data.entities[j])
         uhat = data.entities[j].F * mj.beta
         U = mj.sample - uhat
-        nu   += size(mj.beta, 1)
-        Tinv += mj.beta' * mj.beta * data.entities[j].lambda_beta
+        if full_lambda_u
+          nu   += size(mj.beta, 1)
+          Tinv += mj.beta' * mj.beta * data.entities[j].lambda_beta
+        end
       else
         U = mj.sample
       end
