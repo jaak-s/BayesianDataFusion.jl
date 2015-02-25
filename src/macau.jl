@@ -11,12 +11,15 @@ function macau(data::RelationData;
               class_cut       = log10(200),
               verbose::Bool   = true,
               full_lambda_u   = false,
+              reset_model     = true,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
 
-  for en in data.entities
-    initModel!(en, num_latent, lambda_beta = lambda_beta)
+  if reset_model
+    for en in data.entities
+      initModel!(en, num_latent, lambda_beta = lambda_beta)
+    end
   end
 
   modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
