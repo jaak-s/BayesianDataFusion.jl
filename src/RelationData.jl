@@ -100,6 +100,10 @@ numTest(r::Relation) = size(r.test_vec, 1)
 
 function assignToTest!(r::Relation, ntest::Int64)
   test_id  = sample(1:size(r.data.df,1), ntest; replace=false)
+  assignToTest!(r, test_id)
+end
+
+function assignToTest!(r::Relation, test_id::Vector{Int64})
   test_vec = array(r.data.df[test_id, :])
   r.data   = removeSamples(r.data, test_id)
   r.test_vec    = test_vec
