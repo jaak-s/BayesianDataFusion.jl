@@ -102,9 +102,9 @@ function macau(data::RelationData;
     time1    = time()
     haveTest = numTest(rel) > 0
 
-    correct  = (rel.test_label .== (probe_rat_all .< class_cut) )
+    correct  = (rel.test_label .== (probe_rat_all .< rel.class_cut) )
     err_avg  = mean(correct)
-    err      = mean(rel.test_label .== (probe_rat .< class_cut))
+    err      = mean(rel.test_label .== (probe_rat .< rel.class_cut))
 
     clamped_rat     = isempty(clamp) ?probe_rat     :makeClamped(probe_rat, clamp)
     clamped_rat_all = isempty(clamp) ?probe_rat_all :makeClamped(probe_rat_all, clamp)
