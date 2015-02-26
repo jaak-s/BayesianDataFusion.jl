@@ -4,6 +4,12 @@
 
 Implementation of data fusion methods.
 
+## Installation
+```julia
+Pkg.clone("https://github.com/JuliaLang/IterativeSolvers.jl.git")
+Pkg.clone("https://github.com/jaak-s/BayesianDataFusion.jl.git")
+```
+
 ## Example
 ```julia
 using BayesianDataFusion
