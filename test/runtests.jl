@@ -37,6 +37,9 @@ x12 = getData(X3, 1, 2)
 a = DataFrame(A=[1,2,2,3], B=[1,3,1,4], v=[0.4, 1.0, -1.9, 1.4])
 r = Relation(a, "a")
 
+# creating empty Entity
+e1 = Entity("e1")
+
 # testing RelationData from sparse matrix
 Y  = sprand(15,10, 0.1)
 rd = RelationData(Y, class_cut = 0.5)
@@ -64,3 +67,4 @@ y1 = sum(rd.entities[1].model.sample[row,:] .* rd.entities[2].model.sample[col,:
 # alpha sampling
 include("alpha_sampling.jl")
 include("tensor.jl")
+include("custom_rd.jl")

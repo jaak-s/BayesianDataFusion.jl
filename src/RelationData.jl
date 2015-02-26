@@ -3,7 +3,7 @@ using DataFrames
 include("IndexedDF.jl")
 typealias SparseMatrix SparseMatrixCSC{Float64, Int64} 
 
-export RelationData
+export RelationData, addRelation!
 export Relation, numData, numTest, assignToTest!
 export Entity
 export load_mf1c
@@ -31,8 +31,10 @@ type Entity{FT,R}
   lambda_beta::Float64
 
   model::EntityModel
-  Entity{FT,R}(F::FT, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0) = new(F, relations, count, name, lb)
+  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0) = new(F, relations, count, name, lb)
 end
+
+Entity(name::String; F=(), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
 
 ## initializes the model parameters
 function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = NaN)
@@ -87,7 +89,7 @@ type Relation
 
   Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
   Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel())
-  Relation(data::DataFrame, name::String, class_cut=0.0) = new(IndexedDF(data), (), Entity[], name, data[[],:], Bool[], mean(data[:,end]), class_cut, RelationModel())
+  Relation(data::DataFrame, name::String, entities=Entity[], class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[[],:], Bool[], mean(data[:,end]), class_cut, RelationModel())
 end
 
 import Base.size
@@ -147,6 +149,28 @@ function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   df   = DataFrame( row=M.rowval, col=cols, value=nonzeros(M) )
   idf  = IndexedDF(df, dims)
   return RelationData(idf; kw...)
+end
+
+function addRelation!(rd::RelationData, r::Relation)
+  if length(size(r)) != length(r.entities)
+    throw(ArgumentError("Relation has $(length(r.entities)) entities but its data implies $(size(r))."))
+  end
+  push!(rd.relations, r)
+  ## adding entities
+  for i in 1:length(r.entities)
+    en = r.entities[i]
+    if en.count == 0
+      ## updating entity count
+      en.count = size(r, i)
+    elseif en.count != size(r, i)
+      throw(ArgumentError("Entity $(en.name) has $(en.count) instances, relation $(r.name) has data for $(size(r.entitites, i))."))
+    end
+    if any(rd.entities .== en)
+      continue
+    end
+    push!(rd.entities, en)
+  end
+  return nothing
 end
 
 import Base.show
