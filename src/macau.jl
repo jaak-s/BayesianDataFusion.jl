@@ -87,6 +87,9 @@ function macau(data::RelationData;
     probe_rat = pred(rel.test_vec, rel)
 
     if i > burnin
+      if verbose && i == burnin + 1
+        println("--------- Burn-in complete, averaging posterior samples ----------")
+      end
       probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
       counter_prob  = counter_prob + 1
     else

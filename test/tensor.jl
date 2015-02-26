@@ -5,7 +5,7 @@ using DataFrames
 
 A = randn(15,2);
 B = randn(20,2);
-C = ones(2,2);
+C = randn(2,2);
 
 X = Float64[ sum(A[i,:].*B[j,:].*C[k,:]) for i in 1:size(A,1), j in 1:size(B,1), k in 1:size(C,1)]
 
