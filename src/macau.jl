@@ -8,7 +8,6 @@ function macau(data::RelationData;
               lambda_beta     = NaN,
               burnin          = 500,
               psamples        = 200,
-              class_cut       = log10(200),
               verbose::Bool   = true,
               full_lambda_u   = false,
               reset_model     = true,

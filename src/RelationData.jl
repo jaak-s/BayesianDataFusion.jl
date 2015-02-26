@@ -165,10 +165,12 @@ function addRelation!(rd::RelationData, r::Relation)
     elseif en.count != size(r, i)
       throw(ArgumentError("Entity $(en.name) has $(en.count) instances, relation $(r.name) has data for $(size(r.entitites, i))."))
     end
-    if any(rd.entities .== en)
-      continue
+    if ! any(rd.entities .== en)
+      push!(rd.entities, en)
     end
-    push!(rd.entities, en)
+    if ! any(en.relations .!= r)
+      push!(en.relations, r)
+    end
   end
   return nothing
 end
