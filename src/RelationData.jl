@@ -68,11 +68,22 @@ type RelationModel
   alpha_nu0::Float64
   alpha_lambda0::Float64
 
+  beta_lambda::Float64
+
   alpha::Float64
+  beta::Matrix{Float64}
 end
 
-RelationModel(alpha::Float64) = RelationModel(false, 0.0, 1.0, alpha)
-RelationModel() = RelationModel(true, 2, 1.0, NaN)
+RelationModel(alpha::Float64, beta_lambda::Float64=1.0) = RelationModel(false, 0.0, 1.0, beta_lambda, alpha, zeros(0,0))
+RelationModel() = RelationModel(true, 2, 1.0, 1.0, NaN, zeros(0,0))
+
+type RelationTemp
+  mean_value::Float64
+  residual::Vector{Float64}
+  FF::Matrix{Float64}
+
+  RelationTemp() = new()
+end
 
 type Relation
   data::IndexedDF
@@ -82,14 +93,14 @@ type Relation
 
   test_vec::DataFrame
   test_label::Vector{Bool}
-  mean_rating::Float64
   class_cut::Float64
 
   model::RelationModel
+  temp::RelationTemp
 
-  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel(alpha))
-  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], Bool[], valueMean(data), class_cut, RelationModel())
-  Relation(data::DataFrame, name::String, entities=Entity[], class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[[],:], Bool[], mean(data[:,end]), class_cut, RelationModel())
+  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], Bool[], class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], Bool[], class_cut, RelationModel())
+  Relation(data::DataFrame, name::String, entities=Entity[], class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[[],:], Bool[], class_cut, RelationModel())
 end
 
 import Base.size
@@ -97,6 +108,7 @@ size(r::Relation) = [length(x) for x in r.data.index]
 size(r::Relation, d::Int) = length(r.data.index[d])
 numData(r::Relation) = nnz(r.data)
 numTest(r::Relation) = size(r.test_vec, 1)
+hasFeatures(r::Relation) = ! isempty(r.F)
 
 function assignToTest!(r::Relation, ntest::Int64)
   test_id  = sample(1:size(r.data.df,1), ntest; replace=false)
@@ -108,7 +120,6 @@ function assignToTest!(r::Relation, test_id::Vector{Int64})
   r.data   = removeSamples(r.data, test_id)
   r.test_vec    = test_vec
   r.test_label  = r.test_vec[:,end] .< r.class_cut
-  r.mean_rating = valueMean(r.data)
   nothing
 end
 

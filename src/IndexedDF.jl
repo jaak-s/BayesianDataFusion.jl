@@ -1,6 +1,6 @@
 using DataFrames
 
-export IndexedDF, getData, getCount, removeSamples, getValues
+export IndexedDF, getData, getCount, removeSamples, getValues, valueMean
 
 type IndexedDF
   df::DataFrame

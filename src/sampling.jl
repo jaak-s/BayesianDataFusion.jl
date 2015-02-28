@@ -5,7 +5,7 @@ function pred(probe_vec, r::Relation)
   for i in 2:length(r.entities)
     U .*= r.entities[i].model.sample[probe_vec[:,i],:]
   end
-  vec(sum(U,2)) + r.mean_rating
+  vec(sum(U,2)) + r.temp.mean_value
 end
 
 function pred(r::Relation)
@@ -13,7 +13,7 @@ function pred(r::Relation)
   for i in 2:length(r.entities)
     U .*= r.entities[i].model.sample[getMode(r.data, i),:]
   end
-  return vec(sum(U ,2)) + r.mean_rating
+  return vec(sum(U ,2)) + r.temp.mean_value
 end
 
 function makeClamped(x, clamp::Vector{Float64})
@@ -73,7 +73,7 @@ function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_othe
   for r = 1:length(s.relations)
     rel = s.relations[r]
     df  = getData(rel.data, modes[r], i)
-    rr  = array( df[:,end] ) - rel.mean_rating
+    rr  = array( df[:,end] ) - rel.temp.mean_value
     modes_o1 = modes_other[r][1]
     modes_o2 = modes_other[r][2:end]
 

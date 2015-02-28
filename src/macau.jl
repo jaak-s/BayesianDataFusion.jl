@@ -21,6 +21,12 @@ function macau(data::RelationData;
     end
   end
 
+  for r in data.relations
+    r.temp = RelationTemp()
+    r.temp.mean_value = valueMean(r.data)
+  end
+  
+
   modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
                      data.entities)
   modes_other = map(entity -> Vector{Int64}[ find(en -> en != entity, r.entities) for r in entity.relations ],
@@ -40,13 +46,14 @@ function macau(data::RelationData;
 
     # sample relation model (alpha)
     for r in data.relations
-      r.model.alpha_sample || continue
-
-      err = pred(r) - getValues(r.data)
-      r.model.alpha = sample_alpha(r.model.alpha_lambda0, r.model.alpha_nu0, err)
+      if r.model.alpha_sample
+        err = pred(r) - getValues(r.data)
+        r.model.alpha = sample_alpha(r.model.alpha_lambda0, r.model.alpha_nu0, err)
+      end
+      if hasFeatures(r)
+        ## TODO: sample r.model.beta
+      end
     end
-
-    rel = data.relations[1]
 
     # Sample from entity hyperparams
     for j in 1:length(data.entities)
@@ -82,8 +89,7 @@ function macau(data::RelationData;
       end
     end
 
-    ## TODO, use pred based on probe_vec and relation
-    #probe_rat = pred(rel.test_vec, data.entities[2].model.sample, data.entities[1].model.sample, rel.mean_rating)
+    rel = data.relations[1]
     probe_rat = pred(rel.test_vec, rel)
 
     if i > burnin

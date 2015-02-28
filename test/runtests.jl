@@ -36,6 +36,7 @@ x12 = getData(X3, 1, 2)
 # creating relation from DataFrame
 a = DataFrame(A=[1,2,2,3], B=[1,3,1,4], v=[0.4, 1.0, -1.9, 1.4])
 r = Relation(a, "a")
+@test size(r) == [3,4]
 
 # creating empty Entity
 e1 = Entity("e1")
@@ -61,7 +62,7 @@ ytrain_hat = pred(rd.relations[1])
 @test length(ytrain_hat) == numData(rd.relations[1])
 row = rd.relations[1].data.df[1,1]
 col = rd.relations[1].data.df[1,2]
-y1 = sum(rd.entities[1].model.sample[row,:] .* rd.entities[2].model.sample[col,:]) + rd.relations[1].mean_rating
+y1 = sum(rd.entities[1].model.sample[row,:] .* rd.entities[2].model.sample[col,:]) + valueMean(rd.relations[1].data)
 @test_approx_eq y1 ytrain_hat[1]
 
 # alpha sampling
