@@ -71,15 +71,15 @@ type RelationModel
   beta_lambda::Float64
 
   alpha::Float64
-  beta::Matrix{Float64}
+  beta::Vector{Float64}
+  mean_value::Float64
 end
 
-RelationModel(alpha::Float64, beta_lambda::Float64=1.0) = RelationModel(false, 0.0, 1.0, beta_lambda, alpha, zeros(0,0))
-RelationModel() = RelationModel(true, 2, 1.0, 1.0, NaN, zeros(0,0))
+RelationModel(alpha::Float64, beta_lambda::Float64=1.0) = RelationModel(false, 0.0, 1.0, beta_lambda, alpha, zeros(0), 0.0)
+RelationModel() = RelationModel(true, 2, 1.0, 1.0, NaN, zeros(0), 0.0)
 
 type RelationTemp
-  mean_value::Float64
-  residual::Vector{Float64}
+  linear_values::Vector{Float64} ## mean_value + F * beta
   FF::Matrix{Float64}
 
   RelationTemp() = new()
@@ -92,15 +92,16 @@ type Relation
   name::String
 
   test_vec::DataFrame
+  test_F
   test_label::Vector{Bool}
   class_cut::Float64
 
   model::RelationModel
   temp::RelationTemp
 
-  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], Bool[], class_cut, RelationModel(alpha))
-  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], Bool[], class_cut, RelationModel())
-  Relation(data::DataFrame, name::String, entities=Entity[], class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[[],:], Bool[], class_cut, RelationModel())
+  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], (), Bool[], class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], (), Bool[], class_cut, RelationModel())
+  Relation(data::DataFrame, name::String, entities=Entity[], class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[[],:], (), Bool[], class_cut, RelationModel())
 end
 
 import Base.size
@@ -120,6 +121,12 @@ function assignToTest!(r::Relation, test_id::Vector{Int64})
   r.data   = removeSamples(r.data, test_id)
   r.test_vec    = test_vec
   r.test_label  = r.test_vec[:,end] .< r.class_cut
+  if hasFeatures(r)
+    r.test_F = r.F[test_id,:]
+    train    = ones(Bool, size(r.F, 1) )
+    train[test_id] = false
+    r.F      = r.F[train,:]
+  end
   nothing
 end
 

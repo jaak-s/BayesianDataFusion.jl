@@ -11,21 +11,26 @@ function macau(data::RelationData;
               verbose::Bool   = true,
               full_lambda_u   = false,
               reset_model     = true,
+              compute_ff_size = 6000,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
+
+  verbose && println("Model setup")
 
   if reset_model
     for en in data.entities
       initModel!(en, num_latent, lambda_beta = lambda_beta)
     end
+    for r in data.relations
+      r.model.mean_value    = valueMean(r.data)
+      r.temp = RelationTemp()
+      r.temp.linear_values = r.model.mean_value * ones(numData(r))
+      if hasFeatures(r) && size(r.F,2) <= compute_ff_size
+        r.temp.FF = r.F' * r.F
+      end
+    end
   end
-
-  for r in data.relations
-    r.temp = RelationTemp()
-    r.temp.mean_value = valueMean(r.data)
-  end
-  
 
   modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
                      data.entities)
@@ -51,7 +56,8 @@ function macau(data::RelationData;
         r.model.alpha = sample_alpha(r.model.alpha_lambda0, r.model.alpha_nu0, err)
       end
       if hasFeatures(r)
-        ## TODO: sample r.model.beta
+        r.model.beta = sample_beta_rel(r)
+        r.temp.linear_values = r.model.mean_value + r.F * r.model.beta
       end
     end
 
@@ -90,7 +96,7 @@ function macau(data::RelationData;
     end
 
     rel = data.relations[1]
-    probe_rat = pred(rel.test_vec, rel)
+    probe_rat = pred(rel, rel.test_vec, rel.test_F)
 
     if i > burnin
       if verbose && i == burnin + 1

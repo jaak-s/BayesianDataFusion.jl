@@ -1,19 +1,23 @@
 export pred
 
-function pred(probe_vec, r::Relation)
+function pred(r::Relation, probe_vec::DataFrame, F)
+  if isempty(F)
+    return udot(r, probe_vec) + r.model.mean_value
+  end
+  return udot(r, probe_vec) + F * r.model.beta + r.model.mean_value
+end
+
+function pred(r::Relation)
+  udot(r, r.data.df) + r.temp.linear_values
+end
+
+## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for relation r
+function udot(r::Relation, probe_vec::DataFrame)
   U = r.entities[1].model.sample[probe_vec[:,1],:]
   for i in 2:length(r.entities)
     U .*= r.entities[i].model.sample[probe_vec[:,i],:]
   end
-  vec(sum(U,2)) + r.temp.mean_value
-end
-
-function pred(r::Relation)
-  U = r.entities[1].model.sample[getMode(r.data, 1),:]
-  for i in 2:length(r.entities)
-    U .*= r.entities[i].model.sample[getMode(r.data, i),:]
-  end
-  return vec(sum(U ,2)) + r.temp.mean_value
+  return vec(sum(U, 2))
 end
 
 function makeClamped(x, clamp::Vector{Float64})
@@ -73,7 +77,7 @@ function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_othe
   for r = 1:length(s.relations)
     rel = s.relations[r]
     df  = getData(rel.data, modes[r], i)
-    rr  = array( df[:,end] ) - rel.temp.mean_value
+    rr  = array( df[:,end] ) - rel.temp.linear_values[getI(rel.data, modes[r], i)]
     modes_o1 = modes_other[r][1]
     modes_o2 = modes_other[r][2:end]
 
@@ -105,4 +109,21 @@ function sample_beta(F, sample_u_c, Lambda_u, lambda_beta)
     beta[:,d] = beta_list[d]
   end
   return beta, Ft_y
+end
+
+function sample_beta_rel(r::Relation)
+  N, F = size(r.F)
+  alpha  = r.model.alpha
+  lambda = r.model.lambda_beta
+
+  res  = getValues(r.data) - udot(r) - r.model.mean_value
+  aFt_y = alpha * (r.F' * (res + alpha^(-0.5) * randn(N))) + sqrt(lambda) * randn(F)
+
+  if isdefined(r.temp, :FF)
+    ## using FF to compute beta_r
+    K = alpha * r.temp.FF + lambda * speye(F)
+    return K \ aFt_y
+  else
+    error("conjugate gradient unimplemented for relation beta")
+  end
 end

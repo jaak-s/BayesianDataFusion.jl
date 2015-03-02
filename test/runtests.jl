@@ -38,6 +38,11 @@ a = DataFrame(A=[1,2,2,3], B=[1,3,1,4], v=[0.4, 1.0, -1.9, 1.4])
 r = Relation(a, "a")
 @test size(r) == [3,4]
 
+r.F = [1.0 2.5; -1 -2; 0 1; 3 -3]
+assignToTest!(r, [1, 4])
+@test r.F == [-1.0 -2; 0 1]
+@test r.test_F == [1.0 2.5; 3 -3]
+
 # creating empty Entity
 e1 = Entity("e1")
 
