@@ -23,3 +23,6 @@ addRelation!(rd, r)
 
 @test genes.count == size(r, 1)
 @test pheno.count == size(r, 2)
+@test length(genes.relations) == 1
+@test length(pheno.relations) == 1
+@test length(r.entities) == 2
