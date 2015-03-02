@@ -1,14 +1,14 @@
 export pred
 
 function pred(r::Relation, probe_vec::DataFrame, F)
-  if isempty(F)
+  if ! hasFeatures(r)
     return udot(r, probe_vec) + r.model.mean_value
   end
   return udot(r, probe_vec) + F * r.model.beta + r.model.mean_value
 end
 
 function pred(r::Relation)
-  udot(r, r.data.df) + r.temp.linear_values
+  udot(r, r.data.df) + (hasFeatures(r) ? r.temp.linear_values : r.model.mean_value)
 end
 
 ## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for relation r
@@ -77,7 +77,7 @@ function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_othe
   for r = 1:length(s.relations)
     rel = s.relations[r]
     df  = getData(rel.data, modes[r], i)
-    rr  = array( df[:,end] ) - rel.temp.linear_values[getI(rel.data, modes[r], i)]
+    rr  = array( df[:,end] ) - (hasFeatures(rel) ? rel.temp.linear_values[getI(rel.data, modes[r], i)] : rel.model.mean_value)
     modes_o1 = modes_other[r][1]
     modes_o2 = modes_other[r][2:end]
 

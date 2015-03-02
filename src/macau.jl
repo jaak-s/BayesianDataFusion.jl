@@ -25,8 +25,8 @@ function macau(data::RelationData;
     for r in data.relations
       r.model.mean_value    = valueMean(r.data)
       r.temp = RelationTemp()
-      r.temp.linear_values = r.model.mean_value * ones(numData(r))
       if hasFeatures(r) && size(r.F,2) <= compute_ff_size
+        r.temp.linear_values = r.model.mean_value * ones(numData(r))
         r.temp.FF = r.F' * r.F
       end
     end
