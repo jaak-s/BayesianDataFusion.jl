@@ -18,7 +18,8 @@ feat = randn(size(df,1), 2)
 beta = [1.0, -1.0]
 df[:,end] = df[:,end] + feat * beta
 
-rd = RelationData(df, alpha_sample = true)
+rd = RelationData(df) #, alpha_sample = true)
+rd.relations[1].model.alpha_sample = true
 rd.relations[1].F = feat
 
 assignToTest!(rd.relations[1], 10)
