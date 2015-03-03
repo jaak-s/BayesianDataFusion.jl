@@ -116,7 +116,7 @@ function sample_beta_rel(r::Relation)
   alpha  = r.model.alpha
   lambda = r.model.lambda_beta
 
-  res  = getValues(r.data) - udot(r) - r.model.mean_value
+  res  = getValues(r.data) - udot(r, r.data.df) - r.model.mean_value
   aFt_y = alpha * (r.F' * (res + alpha^(-0.5) * randn(N))) + sqrt(lambda) * randn(F)
 
   if isdefined(r.temp, :FF)
@@ -124,6 +124,6 @@ function sample_beta_rel(r::Relation)
     K = alpha * r.temp.FF + lambda * speye(F)
     return K \ aFt_y
   else
-    error("conjugate gradient unimplemented for relation beta")
+    error("conjugate gradient unimplemented for sampling relation beta")
   end
 end

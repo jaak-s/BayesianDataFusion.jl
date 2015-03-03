@@ -68,14 +68,14 @@ type RelationModel
   alpha_nu0::Float64
   alpha_lambda0::Float64
 
-  beta_lambda::Float64
+  lambda_beta::Float64
 
   alpha::Float64
   beta::Vector{Float64}
   mean_value::Float64
 end
 
-RelationModel(alpha::Float64, beta_lambda::Float64=1.0) = RelationModel(false, 0.0, 1.0, beta_lambda, alpha, zeros(0), 0.0)
+RelationModel(alpha::Float64, lambda_beta::Float64=1.0) = RelationModel(false, 0.0, 1.0, lambda_beta, alpha, zeros(0), 0.0)
 RelationModel() = RelationModel(true, 2, 1.0, 1.0, NaN, zeros(0), 0.0)
 
 type RelationTemp
