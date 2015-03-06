@@ -62,6 +62,7 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
 end
 
 hasFeatures(entity::Entity) = ! isempty(entity.F)
+
 function toStr(en::Entity)
   if ! isdefined(en, :model)
     return string(en.name[1:min(3,end)], "[]")
@@ -71,7 +72,7 @@ function toStr(en::Entity)
     "[",
        @sprintf("U:%6.2f", vecnorm(en.model.sample)),
        hasFeatures(en) ? @sprintf(" β:%6.2f", vecnorm(en.model.beta)) :"",
-       hasFeatures(en) ? @sprintf(" λ=%1.1f", en.model.lambda_beta) :"",
+       hasFeatures(en) ? @sprintf(" λ=%1.1f", en.lambda_beta) :"",
     "]")
 end
 
