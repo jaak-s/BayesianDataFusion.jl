@@ -127,7 +127,15 @@ function macau(data::RelationData;
     rmse_avg = haveTest ? sqrt(mean( (rel.test_vec[:,end] - clamped_rat_all) .^ 2 )) : NaN
     rmse     = haveTest ? sqrt(mean( (rel.test_vec[:,end] - clamped_rat) .^ 2 ))     : NaN
     roc_avg  = haveTest ? AUC_ROC(rel.test_label, -vec(probe_rat_all))             : NaN
-    verbose && @printf("Iter %3d: Acc %6.4f | avgAcc %6.4f avgROC %6.4f avgRMSE %6.4f | FU(%6.2f) FM(%6.2f) Fb(%6.2f) α=%2.1f [%2.0fs]\n", i, err, err_avg, roc_avg, rmse_avg, vecnorm(data.entities[1].model.sample), vecnorm(data.entities[2].model.sample), vecnorm(data.entities[1].model.beta), data.relations[1].model.alpha, time1 - time0)
+    if verbose
+      estr = join(map(en -> toStr(en), data.entities), " ")
+      rstr = join(map(r  -> toStr(r),  data.relations), " ")
+      if i <= burnin
+        verbose && @printf("Iter %3d: Acc %6.4f ROC %6.4f RMSE %6.4f | %s | %s [%2.0fs]\n", i, err, roc_avg, rmse_avg, estr, rstr, time1 - time0)
+      else
+        verbose && @printf("Iter %3d: Acc %6.4f ROC %6.4f RMSE %6.4f | %s | %s [%2.0fs]\n", i, err_avg, roc_avg, rmse_avg, estr, rstr, time1 - time0)
+      end
+    end
   end
 
   result = Dict{String,Any}()

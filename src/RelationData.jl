@@ -5,7 +5,7 @@ typealias SparseMatrix SparseMatrixCSC{Float64, Int64}
 
 export RelationData, addRelation!
 export Relation, numData, numTest, assignToTest!
-export Entity
+export Entity, toStr
 export load_mf1c
 
 type EntityModel
@@ -62,6 +62,18 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
 end
 
 hasFeatures(entity::Entity) = ! isempty(entity.F)
+function toStr(en::Entity)
+  if ! isdefined(en, :model)
+    return string(en.name[1:min(3,end)], "[]")
+  end
+  return string(
+    en.name[1:min(3,end)],
+    "[",
+       @sprintf("U:%6.2f", vecnorm(en.model.sample)),
+       hasFeatures(en) ? @sprintf(" β:%6.2f", vecnorm(en.model.beta)) :"",
+       hasFeatures(en) ? @sprintf(" λ=%1.1f", en.model.lambda_beta) :"",
+    "]")
+end
 
 type RelationModel
   alpha_sample::Bool
@@ -110,6 +122,16 @@ size(r::Relation, d::Int) = length(r.data.index[d])
 numData(r::Relation) = nnz(r.data)
 numTest(r::Relation) = size(r.test_vec, 1)
 hasFeatures(r::Relation) = ! isempty(r.F)
+function toStr(r::Relation)
+  if ! isdefined(r, :model)
+    return string(r.name[1:min(4,end)], "[]")
+  end
+  return string(
+    r.name[1:min(4,end)],
+    "[",
+       @sprintf("α=%2.1f", r.model.alpha),
+    "]")
+end
 
 function assignToTest!(r::Relation, ntest::Int64)
   test_id  = sample(1:size(r.data.df,1), ntest; replace=false)
