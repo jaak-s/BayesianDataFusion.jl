@@ -131,9 +131,9 @@ function macau(data::RelationData;
       estr = join(map(en -> toStr(en), data.entities), " ")
       rstr = join(map(r  -> toStr(r),  data.relations), " ")
       if i <= burnin
-        verbose && @printf("Iter %3d: Acc %6.4f ROC %6.4f RMSE %6.4f | %s | %s [%2.0fs]\n", i, err, roc_avg, rmse_avg, estr, rstr, time1 - time0)
+        verbose && @printf("Iter %3d: Acc=%6.4f ROC=%6.4f RMSE=%6.4f | %s | %s [%2.0fs]\n", i, err, roc_avg, rmse_avg, estr, rstr, time1 - time0)
       else
-        verbose && @printf("Iter %3d: Acc %6.4f ROC %6.4f RMSE %6.4f | %s | %s [%2.0fs]\n", i, err_avg, roc_avg, rmse_avg, estr, rstr, time1 - time0)
+        verbose && @printf("Iter %3d: Acc=%6.4f ROC=%6.4f RMSE=%6.4f | %s | %s [%2.0fs]\n", i, err_avg, roc_avg, rmse_avg, estr, rstr, time1 - time0)
       end
     end
   end
