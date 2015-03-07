@@ -174,7 +174,7 @@ type RelationData
     end
     push!(r.entities, e1)
     push!(r.entities, e2)
-    return new( {e1, e2}, {r} )
+    return new( Entity[e1, e2], Relation[r] )
   end
 end
 
