@@ -72,10 +72,6 @@ function macau(data::RelationData;
       Tinv = mj.WI
 
       if hasFeatures(en)
-        if en.lambda_beta_sample
-          en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
-        end
-
         uhat = en.F * mj.beta
         U = mj.sample - uhat
         if full_lambda_u
@@ -97,6 +93,9 @@ function macau(data::RelationData;
 
       if hasFeatures( data.entities[j] )
         mj.beta, rhs = sample_beta(data.entities[j].F, mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta)
+        if en.lambda_beta_sample
+          en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
+        end
       end
     end
 
