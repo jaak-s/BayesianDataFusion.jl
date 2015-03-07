@@ -49,6 +49,14 @@ function sample_alpha(alpha_lambda0::Float64, alpha_nu0::Float64, err::Vector{Fl
   return rand(Wishart(alpha_nu0 + n, SW))[1]
 end
 
+function sample_lambda_beta(β::Matrix{Float64}, Lambda_u::Matrix{Float64}, ν::Float64, μ::Float64)
+  νx = ν + size(β, 1)
+  μx = μ * νx / (ν + μ * trace( (β'*β) * Lambda_u) )
+  b  = νx / 2
+  c  = 2*μx / νx
+  return rand(Gamma(b, c))
+end
+
 function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
   r = A.colptr[col]:A.colptr[col+1]-1
   A.rowval[r], A.nzval[r]

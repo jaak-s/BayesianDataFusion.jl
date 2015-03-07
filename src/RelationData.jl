@@ -29,9 +29,12 @@ type Entity{FT,R}
   name::String
 
   lambda_beta::Float64
+  lambda_beta_sample::Bool
+  mu::Float64   ## Hyper-prior for lambda_beta
+  nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0) = new(F, relations, count, name, lb)
+  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=false, mu=1.0, nu=1.0) = new(F, relations, count, name, lb, lb_sample, mu, nu)
 end
 
 Entity(name::String; F=(), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
@@ -226,10 +229,17 @@ function show(io::IO, rd::RelationData)
   for r in rd.relations
     @printf(io, "%10s: %s, #known = %d, #test = %d, α = %s\n", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r), r.model.alpha_sample ?"sample" :@sprintf("%.2f", r.model.alpha))
   end
+
   println(io, "[Entities]")
   for en in rd.entities
-    @printf(io, "%10s: %6d with %s\n", en.name, en.count, 
-      hasFeatures(en) ?@sprintf("%d features (lambda = %1.1f)", size(en.F, 2), en.lambda_beta) :"no features", )
+    @printf(io, "%10s: %6d ", en.name, en.count)
+    if hasFeatures(en)
+      print(io, "with ", size(en.F,2), " features (λ = ",
+                en.lambda_beta_sample ? "sample" :@sprintf("%1.1f", en.lambda_beta),")")
+    else
+      print(io, "with no features")
+    end
+    println(io)
   end
 end
 

@@ -63,19 +63,24 @@ function macau(data::RelationData;
 
     # Sample from entity hyperparams
     for j in 1:length(data.entities)
-      mj = data.entities[j].model
+      en = data.entities[j]
+      mj = en.model
 
       local U::Matrix{Float64}
       local uhat::Matrix{Float64}
       nu   = num_latent
       Tinv = mj.WI
 
-      if hasFeatures(data.entities[j])
-        uhat = data.entities[j].F * mj.beta
+      if hasFeatures(en)
+        if en.lambda_beta_sample
+          en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
+        end
+
+        uhat = en.F * mj.beta
         U = mj.sample - uhat
         if full_lambda_u
           nu   += size(mj.beta, 1)
-          Tinv += mj.beta' * mj.beta * data.entities[j].lambda_beta
+          Tinv += mj.beta' * mj.beta * en.lambda_beta
         end
       else
         U = mj.sample
