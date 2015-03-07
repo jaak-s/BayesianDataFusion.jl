@@ -115,8 +115,8 @@ type Relation
   model::RelationModel
   temp::RelationTemp
 
-  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[[],:], (), Bool[], class_cut, RelationModel(alpha))
-  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[[],:], (), Bool[], class_cut, RelationModel())
+  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel())
   Relation(data::DataFrame, name::String, entities=Entity[], class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[[],:], (), Bool[], class_cut, RelationModel())
 end
 
