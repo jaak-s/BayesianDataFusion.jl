@@ -5,7 +5,7 @@ typealias SparseMatrix SparseMatrixCSC{Float64, Int64}
 
 export RelationData, addRelation!
 export Relation, numData, numTest, assignToTest!
-export Entity, toStr
+export Entity, toStr, normalizeFeatures!, normalizeRows!
 export load_mf1c
 
 type EntityModel
@@ -211,7 +211,7 @@ function addRelation!(rd::RelationData, r::Relation)
       ## updating entity count
       en.count = size(r, i)
     elseif en.count != size(r, i)
-      throw(ArgumentError("Entity $(en.name) has $(en.count) instances, relation $(r.name) has data for $(size(r.entitites, i))."))
+      throw(ArgumentError("Entity $(en.name) has $(en.count) instances, relation $(r.name) has data for $(size(r.entities, i))."))
     end
     if ! any(rd.entities .== en)
       push!(rd.entities, en)
@@ -249,6 +249,11 @@ function normalizeFeatures!(entity::Entity)
   return
 end
 
+function normalizeRows!(entity::Entity)
+  diagf    = sqrt(vec( sum(entity.F.^2, 2) ))
+  entity.F = spdiagm( 1.0 ./ diagf ) * entity.F
+end
+
 function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
                    cmp_feat_file  = "chembl_19_mf1c/chembl-IC50-compound-feat.csv",
                    normalize_feat = false,
@@ -276,8 +281,12 @@ function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
   data.relations[1].test_vec    = probe_vec
   data.relations[1].test_label  = data.relations[1].test_vec[:,3] .< log10(200)
 
-  if normalize_feat
-    normalizeFeatures!(data.entities[1])
+  if normalize_feat != false
+    if normalize_feat == "rows"
+      normalizeRows!(data.entities[1])
+    else
+      normalizeFeatures!(data.entities[1])
+    end
   end
   
   return data
