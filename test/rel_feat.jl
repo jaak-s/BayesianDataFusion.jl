@@ -10,7 +10,7 @@ X = Float64[ sum(A[i,:].*B[j,:]) for i in 1:size(A,1), j in 1:size(B,1) ]
 
 df = DataFrame(A=Int64[], B=Int64[], v=Float64[])
 for i=1:size(A,1), j=1:size(B,1)
-  push!(df, {i, j, X[i,j]})
+  push!(df, Any[i, j, X[i,j]])
 end
 
 ## adding features
