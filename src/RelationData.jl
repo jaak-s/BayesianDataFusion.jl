@@ -121,7 +121,7 @@ type Relation
 end
 
 import Base.size
-size(r::Relation) = [length(x) for x in r.data.index]
+size(r::Relation) = tuple([length(x) for x in r.data.index]...)
 size(r::Relation, d::Int) = length(r.data.index[d])
 numData(r::Relation) = nnz(r.data)
 numTest(r::Relation) = size(r.test_vec, 1)

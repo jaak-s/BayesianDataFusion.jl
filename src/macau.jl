@@ -12,9 +12,11 @@ function macau(data::RelationData;
               full_lambda_u   = false,
               reset_model     = true,
               compute_ff_size = 6000,
+              full_prediction = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
+  local yhat_full
 
   verbose && println("Model setup")
 
@@ -36,6 +38,9 @@ function macau(data::RelationData;
                      data.entities)
   modes_other = map(entity -> Vector{Int64}[ find(en -> en != entity, r.entities) for r in entity.relations ],
                      data.entities)
+  if full_prediction
+    full = zeros(size(r.relations[1]))
+  end
 
   verbose && println("Sampling")
   err_avg  = 0.0

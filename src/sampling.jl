@@ -20,6 +20,11 @@ function udot(r::Relation, probe_vec::DataFrame)
   return vec(sum(U, 2))
 end
 
+## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for all points in relation r
+function udot_all(r::Relation)
+  ## TODO: use iterators
+end
+
 function makeClamped(x, clamp::Vector{Float64})
   x2 = copy(x)
   x2[x2 .< clamp[1]] = clamp[1]

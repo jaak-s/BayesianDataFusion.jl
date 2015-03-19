@@ -36,7 +36,7 @@ x12 = getData(X3, 1, 2)
 # creating relation from DataFrame
 a = DataFrame(A=[1,2,2,3], B=[1,3,1,4], v=[0.4, 1.0, -1.9, 1.4])
 r = Relation(a, "a")
-@test size(r) == [3,4]
+@test size(r) == (3,4)
 
 r.F = [1.0 2.5; -1 -2; 0 1; 3 -3]
 assignToTest!(r, [1, 4])
