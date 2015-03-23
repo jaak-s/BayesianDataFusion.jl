@@ -1,4 +1,6 @@
-export pred
+using Iterators
+
+export pred, pred_all
 
 function pred(r::Relation, probe_vec::DataFrame, F)
   if ! hasFeatures(r)
@@ -39,7 +41,7 @@ function pred_all(r::Relation)
   if hasFeatures(r)
     error("Prediction of all elements is not possible when Relation has features.")
   end
-  udot(r) + r.model.mean_value
+  udot_all(r) + r.model.mean_value
 end
 
 function makeClamped(x, clamp::Vector{Float64})

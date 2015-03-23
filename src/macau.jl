@@ -39,7 +39,7 @@ function macau(data::RelationData;
   modes_other = map(entity -> Vector{Int64}[ find(en -> en != entity, r.entities) for r in entity.relations ],
                      data.entities)
   if full_prediction
-    yhat_full = zeros(size(r.relations[1]))
+    yhat_full = zeros(size(data.relations[1]))
   end
 
   verbose && println("Sampling")
@@ -107,6 +107,10 @@ function macau(data::RelationData;
     rel = data.relations[1]
     probe_rat = pred(rel, rel.test_vec, rel.test_F)
 
+    if full_prediction && i >= burnin ## last burnin sample is included
+      yhat_full += pred_all( data.relations[1] )
+    end
+
     if i > burnin
       if verbose && i == burnin + 1
         println("--------- Burn-in complete, averaging posterior samples ----------")
@@ -155,6 +159,9 @@ function macau(data::RelationData;
   result["RMSE"]        = rmse_avg
   result["accuracy"]    = err_avg
   result["ROC"]         = roc_avg
+  if full_prediction
+    result["predictions_full"] = yhat_full / (burnin + 1)
+  end
   if numTest(data.relations[1]) > 0
     rel = data.relations[1]
     result["predictions"] = copy(rel.test_vec)

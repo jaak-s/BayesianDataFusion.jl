@@ -57,6 +57,18 @@ assignToTest!(rd.relations[1], 2)
 result = macau(rd, burnin = 10, psamples = 10, verbose = false)
 @test size(result["predictions"],1) == 2
 
+# testing pred_all
+Yhat = pred_all(rd.relations[1])
+@test size(Yhat) == (15, 10)
+@test_approx_eq Yhat[2,3] (rd.entities[1].model.sample[2,:] * rd.entities[2].model.sample[3,:]')[1] + rd.relations[1].model.mean_value
+
+# predict all
+result1 = macau(rd, burnin = 10, psamples = 10, verbose = false, full_prediction = true)
+@test size(result1["predictions_full"]) == (15, 10)
+x1 = result1["predictions"][1, 1:2]
+y1 = result1["predictions"][:pred][1]
+@test_approx_eq result1["predictions_full"][x1[1], x1[2]] y1
+
 # custom function on latent variables
 f1(a) = length(a)
 result2 = macau(rd, burnin = 5, psamples = 6, verbose = false, f = f1)
