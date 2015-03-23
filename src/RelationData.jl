@@ -74,7 +74,7 @@ function toStr(en::Entity)
     en.name[1:min(3,end)],
     "[",
        @sprintf("U:%6.2f", vecnorm(en.model.sample)),
-       hasFeatures(en) ? @sprintf(" β:%6.2f", vecnorm(en.model.beta)) :"",
+       hasFeatures(en) ? @sprintf(" β:%3.2f", vecnorm(en.model.beta)) :"",
        hasFeatures(en) ? @sprintf(" λ=%1.1f", en.lambda_beta) :"",
     "]")
 end
