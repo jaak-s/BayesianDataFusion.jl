@@ -39,7 +39,7 @@ function macau(data::RelationData;
   modes_other = map(entity -> Vector{Int64}[ find(en -> en != entity, r.entities) for r in entity.relations ],
                      data.entities)
   if full_prediction
-    full = zeros(size(r.relations[1]))
+    yhat_full = zeros(size(r.relations[1]))
   end
 
   verbose && println("Sampling")
