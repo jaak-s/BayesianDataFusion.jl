@@ -22,7 +22,24 @@ end
 
 ## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for all points in relation r
 function udot_all(r::Relation)
-  ## TODO: use iterators
+  U = zeros( Int64[en.count for en in r.entities]... )
+  num_latent = length(r.entities[1].model.mu)
+  for p in product( map(en -> 1:en.count, r.entities)... )
+    x = ones(num_latent)
+    for i in 1:length(p)
+      x .*= vec(r.entities[i].model.sample[p[i],:])
+    end
+    U[p...] = sum(x)
+  end
+  return U
+end
+
+## predict all
+function pred_all(r::Relation)
+  if hasFeatures(r)
+    error("Prediction of all elements is not possible when Relation has features.")
+  end
+  udot(r) + r.model.mean_value
 end
 
 function makeClamped(x, clamp::Vector{Float64})
