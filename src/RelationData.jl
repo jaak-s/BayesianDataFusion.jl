@@ -134,6 +134,7 @@ function toStr(r::Relation)
     r.name[1:min(4,end)],
     "[",
        @sprintf("α=%2.1f", r.model.alpha),
+       hasFeatures(r) ? @sprintf(" β:%2.1f", vecnorm(r.model.beta)) :"",
     "]")
 end
 
@@ -227,7 +228,9 @@ import Base.show
 function show(io::IO, rd::RelationData)
   println(io, "[Relations]")
   for r in rd.relations
-    @printf(io, "%10s: %s, #known = %d, #test = %d, α = %s\n", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r), r.model.alpha_sample ?"sample" :@sprintf("%.2f", r.model.alpha))
+    @printf(io, "%10s: %s, #known = %d, #test = %d, α = %s", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r), r.model.alpha_sample ?"sample" :@sprintf("%.2f", r.model.alpha))
+    hasFeatures(r) && @printf(io, ", #feat = %d", size(r.F,2))
+    @printf(io, "\n")
   end
 
   println(io, "[Entities]")
