@@ -32,3 +32,14 @@ function filter_rare(X::SparseMatrixCSC, nmin)
     featn = vec(sum(X, 1))
     return X[:, featn .>= nmin]
 end
+
+function write_binary_int32(filename, X1::Vector{Int32}, X2::Vector{Int32})
+    length(X1) == length(X2) && error("X1 and X2 must have same length.")
+    open(filename, "w") do f
+        write(f, length(X1))
+        for i = 1:length(X1)
+            write(f, X1[i])
+            write(f, X2[i])
+        end
+    end
+end
