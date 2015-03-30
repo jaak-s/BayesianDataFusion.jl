@@ -1,3 +1,5 @@
+export read_ecfp, read_sparse, filter_rare
+
 function read_ecfp(filename)
     i = 0
     next_fp = 1
@@ -26,6 +28,19 @@ function read_ecfp(filename)
     end
     println("Number of lines: $i")
     return rows, cols, fp
+end
+
+function read_sparse(filename)
+    rows = Int32[]
+    cols = Int32[]
+    open(filename) do f
+        for line in eachline(f)
+            a = split(line, ",")
+            push!( rows, parse(Int32, a[1]) )
+            push!( cols, parse(Int32, a[2]) )
+        end
+    end
+    return sparse(rows, cols, 1f0)
 end
 
 function filter_rare(X::SparseMatrixCSC, nmin)
