@@ -1,4 +1,4 @@
-export read_ecfp, read_sparse, filter_rare
+export read_ecfp, read_sparse, read_rowcol, read_rowcol_binary, filter_rare, write_binary
 
 function read_ecfp(filename)
     i = 0
@@ -30,14 +30,36 @@ function read_ecfp(filename)
     return rows, cols, fp
 end
 
+function read_rowcol(filename)
+    rows = Int32[]
+    cols = Int32[]
+    open(filename) do f
+        for line in eachline(f)
+            a = split(line, ",")
+            push!( rows, convert(Int32, parse(a[1])) )
+            push!( cols, convert(Int32, parse(a[2])) )
+        end
+    end
+    return rows, cols
+end
+
+function read_rowcol_binary(filename)
+    rows = Int32[]
+    cols = Int32[]
+    open(filename) do f
+        len = read(f, Int64)
+        return read(f, Int32, (2, len))
+    end
+end
+
 function read_sparse(filename)
     rows = Int32[]
     cols = Int32[]
     open(filename) do f
         for line in eachline(f)
             a = split(line, ",")
-            push!( rows, parse(Int32, a[1]) )
-            push!( cols, parse(Int32, a[2]) )
+            push!( rows, convert(Int32, parse(a[1])) )
+            push!( cols, convert(Int32, parse(a[2])) )
         end
     end
     return sparse(rows, cols, 1f0)
@@ -48,7 +70,7 @@ function filter_rare(X::SparseMatrixCSC, nmin)
     return X[:, featn .>= nmin]
 end
 
-function write_binary_int32(filename, X1::Vector{Int32}, X2::Vector{Int32})
+function write_binary(filename, X1::Vector{Int32}, X2::Vector{Int32})
     length(X1) == length(X2) && error("X1 and X2 must have same length.")
     open(filename, "w") do f
         write(f, length(X1))
