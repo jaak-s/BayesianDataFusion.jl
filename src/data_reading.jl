@@ -36,8 +36,8 @@ function read_rowcol(filename)
     open(filename) do f
         for line in eachline(f)
             a = split(line, ",")
-            push!( rows, convert(Int32, parse(a[1])) )
-            push!( cols, convert(Int32, parse(a[2])) )
+            push!( rows, parse(Int32, a[1]) )
+            push!( cols, parse(Int32, a[2]) )
         end
     end
     return rows, cols
@@ -52,16 +52,8 @@ function read_binary_int32(filename)
 end
 
 function read_sparse(filename)
-    rows = Int32[]
-    cols = Int32[]
-    open(filename) do f
-        for line in eachline(f)
-            a = split(line, ",")
-            push!( rows, convert(Int32, parse(a[1])) )
-            push!( cols, convert(Int32, parse(a[2])) )
-        end
-    end
-    return sparse(rows, cols, 1f0)
+    rc = read_rowcol(filename)
+    return sparse(rc[1], rc[2], 1f0)
 end
 
 function filter_rare(X::SparseMatrixCSC, nmin)
