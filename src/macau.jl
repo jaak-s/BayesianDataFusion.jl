@@ -170,7 +170,7 @@ function macau(data::RelationData;
   result["ROC"]         = roc_avg
   result["RMSE_train"]  = sqrt(mean( (getValues(data.relations[1].data) - train_cl) .^ 2 ))
   if full_prediction
-    result["predictions_full"] = yhat_full / burnin
+    result["predictions_full"] = yhat_full / psamples
   end
   if numTest(data.relations[1]) > 0
     rel = data.relations[1]
