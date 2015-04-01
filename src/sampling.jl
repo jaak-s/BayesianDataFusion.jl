@@ -24,6 +24,12 @@ end
 
 ## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for all points in relation r
 function udot_all(r::Relation)
+  ## matrix version:
+  if length(r.entities) == 2
+    return r.entities[1].model.sample * r.entities[2].model.sample'
+  end
+
+  ## TODO: make tensor version faster:
   U = zeros( Int64[en.count for en in r.entities]... )
   num_latent = length(r.entities[1].model.mu)
   for p in product( map(en -> 1:en.count, r.entities)... )
