@@ -48,6 +48,7 @@ function macau(data::RelationData;
   rmse_avg = 0.0
 
   local probe_rat_all, clamped_rat_all
+  local train_rat_all
   f_output = Any[]
 
   ## Gibbs sampling loop
@@ -106,20 +107,26 @@ function macau(data::RelationData;
 
     rel = data.relations[1]
     probe_rat = pred(rel, rel.test_vec, rel.test_F)
+    train_rat = pred(rel)
 
-    if full_prediction && i >= burnin ## last burnin sample is included
+    if full_prediction && i > burnin
       yhat_full += pred_all( data.relations[1] )
     end
 
     if i > burnin
-      if verbose && i == burnin + 1
-        println("--------- Burn-in complete, averaging posterior samples ----------")
+      train_rat = pred(rel)
+      if i == burnin + 1
+        verbose && println("--------- Burn-in complete, averaging posterior samples ----------")
+        counter_prob  = 1
+        probe_rat_all = probe_rat
+        train_rat_all = train_rat
+      else
+        probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
+        train_rat_all = (counter_prob*train_rat_all + train_rat)/(counter_prob+1)
+        counter_prob  = counter_prob + 1
       end
-      probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
-      counter_prob  = counter_prob + 1
     else
       probe_rat_all = probe_rat
-      counter_prob  = 1
     end
 
     if typeof(f) <: Function && i > burnin
@@ -150,6 +157,8 @@ function macau(data::RelationData;
       end
     end
   end
+  ## calculating prediction on training set
+  train_cl = isempty(clamp) ?train_rat_all :makeClamped(train_rat_all, clamp)
 
   result = Dict{String,Any}()
   result["num_latent"]  = num_latent
@@ -159,8 +168,9 @@ function macau(data::RelationData;
   result["RMSE"]        = rmse_avg
   result["accuracy"]    = err_avg
   result["ROC"]         = roc_avg
+  result["RMSE_train"]  = sqrt(mean( (getValues(data.relations[1].data) - train_cl) .^ 2 ))
   if full_prediction
-    result["predictions_full"] = yhat_full / (burnin + 1)
+    result["predictions_full"] = yhat_full / burnin
   end
   if numTest(data.relations[1]) > 0
     rel = data.relations[1]
