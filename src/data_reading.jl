@@ -1,4 +1,6 @@
-export read_ecfp, read_sparse, read_rowcol, read_binary_int32, filter_rare, write_binary_int32
+export read_ecfp, read_sparse, read_rowcol
+export read_binary_int32, filter_rare, write_binary_int32
+export read_binary_float32
 
 function read_ecfp(filename)
     i = 0
@@ -48,6 +50,14 @@ function read_binary_int32(filename)
         nrows = read(f, Int64)
         ncols = read(f, Int64)
         return read(f, Int32, (nrows, ncols))
+    end
+end
+
+function read_binary_float32(filename)
+    open(filename) do f
+        nrows = read(f, Int64)
+        ncols = read(f, Int64)
+        return read(f, Float32, (nrows, ncols))
     end
 end
 
