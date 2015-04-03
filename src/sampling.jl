@@ -133,15 +133,16 @@ function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_othe
   chol(covar)' * randn(length(mu)) + mu
 end
 
-function sample_beta(F, sample_u_c, Lambda_u, lambda_beta)
+function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool)
   N, D = size(sample_u_c)
-  numF = size(F, 2)
+  numF = size(entity.F, 2)
   
   mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
-  Ft_y = F' * (sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
+  Ft_y = entity.F' * (sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   
+  ## TODO: if use_ff use full solver
   # executed in parallel
-  beta_list = pmap( d -> ridge_solve(F, Ft_y[:,d], lambda_beta), 1:D )
+  beta_list = pmap( d -> ridge_solve(entity.F, Ft_y[:,d], lambda_beta), 1:D )
   beta = zeros(numF, D)
   for d = 1:D
     beta[:,d] = beta_list[d]

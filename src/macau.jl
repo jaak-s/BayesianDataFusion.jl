@@ -11,7 +11,7 @@ function macau(data::RelationData;
               verbose::Bool   = true,
               full_lambda_u   = false,
               reset_model     = true,
-              compute_ff_size = 6000,
+              compute_ff_size = 6500,
               full_prediction = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
@@ -98,7 +98,8 @@ function macau(data::RelationData;
       end
 
       if hasFeatures( data.entities[j] )
-        mj.beta, rhs = sample_beta(data.entities[j].F, mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta)
+        use_ff = size(data.entities[j].F, 2) > compute_ff_size
+        mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta, use_ff)
         if en.lambda_beta_sample
           en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
         end
