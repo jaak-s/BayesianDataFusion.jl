@@ -1,6 +1,7 @@
 using Iterators
 
 export pred, pred_all
+export solve_cg, solve_full
 
 function pred(r::Relation, probe_vec::DataFrame, F)
   if ! hasFeatures(r)
@@ -140,14 +141,30 @@ function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool)
   mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
   Ft_y = entity.F' * (sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   
-  ## TODO: if use_ff use full solver
-  # executed in parallel
-  beta_list = pmap( d -> ridge_solve(entity.F, Ft_y[:,d], lambda_beta), 1:D )
-  beta = zeros(numF, D)
+  if use_ff
+    beta = solve_full(entity.FF, Ft_y, lambda_beta)
+  else
+    beta = solve_cg(entity.F, Ft_y, lambda_beta)
+  end
+  return beta, Ft_y
+end
+
+function solve_cg(F, rhs, lambda_beta)
+  D = size(rhs, 2)
+  beta_list = pmap( d -> ridge_solve(F, rhs[:,d], lambda_beta), 1:D )
+  beta = zeros(size(rhs,1), D)
   for d = 1:D
     beta[:,d] = beta_list[d]
   end
-  return beta, Ft_y
+  return beta
+end
+
+function solve_full(FF, rhs, lambda_beta)
+  FFreg = copy(FF)
+  for i = 1:size(FFreg, 2)
+    FFreg[i,i] += lambda_beta
+  end
+  return FFreg \ rhs
 end
 
 function sample_beta_rel(r::Relation)

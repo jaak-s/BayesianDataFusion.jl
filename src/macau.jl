@@ -23,6 +23,9 @@ function macau(data::RelationData;
   if reset_model
     for en in data.entities
       initModel!(en, num_latent, lambda_beta = lambda_beta)
+      if hasFeatures(en) && size(en.F,2) <= compute_ff_size
+        en.FF = full(en.F' * en.F)
+      end
     end
     for r in data.relations
       r.model.mean_value    = valueMean(r.data)
@@ -98,7 +101,7 @@ function macau(data::RelationData;
       end
 
       if hasFeatures( data.entities[j] )
-        use_ff = size(data.entities[j].F, 2) > compute_ff_size
+        use_ff = size(data.entities[j].F, 2) <= compute_ff_size
         mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta, use_ff)
         if en.lambda_beta_sample
           en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)

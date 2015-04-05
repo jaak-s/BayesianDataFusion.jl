@@ -28,3 +28,5 @@ addRelation!(rd, r)
 @test length(r.entities)   == 2
 @test length(rd.relations) == 1
 @test length(rd.entities)  == 2
+
+result = macau(rd, burnin=10, psamples=10, verbose=false)
