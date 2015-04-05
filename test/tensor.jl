@@ -15,6 +15,10 @@ for i=1:size(A,1), j=1:size(B,1), k=1:size(C,1)
 end
 
 rd = RelationData(df)
+@test rd.entities[1].name == "A"
+@test rd.entities[2].name == "B"
+@test rd.entities[3].name == "C"
+
 assignToTest!(rd.relations[1], 10)
 result = macau(rd, burnin=50, psamples=10, num_latent=2, verbose=false)
 

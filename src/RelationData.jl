@@ -186,7 +186,7 @@ function RelationData(Am::DataFrame; rname="R1", class_cut=log10(200), alpha=5.0
   rd   = RelationData()
   push!(rd.relations, Relation(idf, rname, class_cut, alpha))
   for d in 1:length(dims)
-    en = Entity{Any, Relation}( (), [rd.relations[1]], size(idf,d), "E$d")
+    en = Entity{Any, Relation}( (), [rd.relations[1]], size(idf,d), string(names(Am)[d]))
     push!(rd.entities, en)
     push!(rd.relations[1].entities, en)
   end
