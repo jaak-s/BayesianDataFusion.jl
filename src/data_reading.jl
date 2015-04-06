@@ -1,6 +1,7 @@
 export read_ecfp, read_sparse, read_rowcol
 export read_binary_int32, filter_rare, write_binary_int32
 export read_binary_float32
+export read_sparse_float32
 
 function read_ecfp(filename)
     i = 0
@@ -61,6 +62,16 @@ function read_binary_float32(filename)
     end
 end
 
+function read_sparse_float32(filename)
+  open(filename) do f
+    nnz = read(f, Int64)
+    rows = read(f, Int32, nnz)
+    cols = read(f, Int32, nnz)
+    vals = read(f, Float32, nnz)
+    return rows, cols, vals
+  end
+end
+
 function read_sparse(filename)
     rc = read_rowcol(filename)
     return sparse(rc[1], rc[2], 1f0)
@@ -72,9 +83,13 @@ function filter_rare(X::SparseMatrixCSC, nmin)
 end
 
 function write_binary_int32(filename, X::Matrix{Int32})
-    open(filename, "w") do f
-        write(f, size(X, 1))
-        write(f, size(X, 2))
-        write(f, X)
-    end
+    write_binary_matrix(filename, X)
+end
+
+function write_binary_matrix(filename, X)
+  open(filename, "w") do f
+    write(f, size(X, 1))
+    write(f, size(X, 2))
+    write(f, X)
+  end
 end
