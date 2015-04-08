@@ -145,7 +145,7 @@ function assignToTest!(r::Relation, ntest::Int64)
 end
 
 function assignToTest!(r::Relation, test_id::Vector{Int64})
-  test_vec = array(r.data.df[test_id, :])
+  test_vec = r.data.df[test_id, :]
   r.data   = removeSamples(r.data, test_id)
   r.test_vec    = test_vec
   r.test_label  = r.test_vec[:,end] .< r.class_cut
@@ -270,7 +270,7 @@ function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
 
   X[:, :value] = log10(X[:, :value]) + 1e-5
   idx          = sample(1:size(X,1), int(floor(20/100 * size(X,1))); replace=false)
-  probe_vec    = array(X[idx,:])
+  probe_vec    = X[idx,:]
   X            = X[setdiff(1:size(X,1), idx), :]
   
   ## reading feature matrix
