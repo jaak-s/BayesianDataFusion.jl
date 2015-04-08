@@ -1,7 +1,7 @@
 export read_ecfp, read_sparse, read_rowcol
 export read_binary_int32, filter_rare, write_binary_int32
 export read_binary_float32
-export read_sparse_float32
+export read_sparse_float32, write_sparse_float32
 
 function read_ecfp(filename)
     i = 0
