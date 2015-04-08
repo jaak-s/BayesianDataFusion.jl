@@ -93,3 +93,12 @@ function write_binary_matrix(filename, X)
     write(f, X)
   end
 end
+
+function write_sparse_float32(filename, rows::Vector{Int32}, cols::Vector{Int32}, values::Vector{Float32})
+  open(filename, "w") do f
+    write(f, length(rows))
+    write(f, rows)
+    write(f, cols)
+    write(f, values)
+  end
+end
