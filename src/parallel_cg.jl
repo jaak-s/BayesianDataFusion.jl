@@ -1,3 +1,5 @@
+export pmult, imult
+
 function normsq{T}(x::Vector{T})
   s = zero(T)
   @inbounds @simd for i=1:length(x)
@@ -54,4 +56,37 @@ function parallel_cg(x, A, b;
         println(err)
     end
     x, err, maxiter
+end
+
+function imult(Fref, u)
+  return fetch(Fref) * u
+end
+
+## setup:
+## feat = genes.F
+## Frefs = map(i -> @spawnat(i, fetch(feat)), workers())
+function pmult(F, Frefs, U, procs)
+    np = length(procs)  # determine the number of processes available
+    n  = size(U,2)
+    results = zeros(size(F,1), size(U,2))
+    i = 1
+    # function to produce the next work item from the queue.
+    # in this case it's just an index.
+    nextidx() = (idx=i; i+=1; idx)
+    @sync begin
+        for p in 1:length(procs)
+            if procs[p] != myid() || np == 1
+                @async begin
+                    while true
+                        idx = nextidx()
+                        if idx > n
+                            break
+                        end
+                        results[:,idx] = remotecall_fetch(procs[p], imult, Frefs[p], U[:,idx])
+                    end
+                end
+            end
+        end
+    end
+    results
 end
