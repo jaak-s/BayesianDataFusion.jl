@@ -195,7 +195,7 @@ end
 
 function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   dims = size(M)
-  cols = rep([1:size(M,2)], M.colptr[2:end] - M.colptr[1:end-1])
+  cols = rep(1:size(M,2), M.colptr[2:end] - M.colptr[1:end-1])
   df   = DataFrame( row=M.rowval, col=cols, value=nonzeros(M) )
   idf  = IndexedDF(df, dims)
   return RelationData(idf; kw...)
