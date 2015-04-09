@@ -139,7 +139,7 @@ function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool)
   numF = size(entity.F, 2)
   
   mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
-  Ft_y = entity.F' * (sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
+  Ft_y = At_mul_B(entity.F, sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   
   if use_ff
     beta = solve_full(entity.FF, Ft_y, lambda_beta)

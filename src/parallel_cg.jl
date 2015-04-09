@@ -78,7 +78,8 @@ import Base.size
 import Base.eltype
 import Base.Ac_mul_B
 
-At_mul_B(A::ParallelSparseMatrix, U::AbstractMatrix) = pmult(A.F, A.refs, U, A.procs)
+At_mul_B(A::ParallelSparseMatrix, U::AbstractMatrix) = pmult(size(A.F,2), A.refs, U, A.procs, imult)
+*(A::ParallelSparseMatrix, U::AbstractMatrix)        = pmult(size(A.F,1), A.refs, U, A.procs, mult)
 isempty(A::ParallelSparseMatrix) = isempty(A.F)
 size(A::ParallelSparseMatrix)    = size(A.F)
 size(A::ParallelSparseMatrix, i::Int) = size(A.F, i::Int)
@@ -89,13 +90,21 @@ function imult(Fref, u)
   return At_mul_B(fetch(Fref), u)
 end
 
+function mult(Fref, u)
+  #Flocal = fetch(Fref)
+  #if size(Flocal,2) != size(u,1)
+  #  error(@sprintf("#columns of F(%d) has to equal number of rows of U(%d).", size(Flocal,2), size(u,1)) )
+  #end
+  return fetch(Fref) * u
+end
+
 ## setup:
 ## feat = genes.F
 ## Frefs = map(i -> @spawnat(i, fetch(feat)), workers())
-function pmult(F, Frefs, U, procs)
+function pmult(nrows::Integer, Frefs, U, procs, mfun)
     np = length(procs)  # determine the number of processes available
     n  = size(U,2)
-    results = zeros(size(F,2), n)
+    results = zeros(nrows, n)
     i = 1
     # function to produce the next work item from the queue.
     # in this case it's just an index.
@@ -109,7 +118,7 @@ function pmult(F, Frefs, U, procs)
                         if idx > n
                             break
                         end
-                        results[:,idx] = remotecall_fetch(procs[p], imult, Frefs[p], U[:,idx])
+                        results[:,idx] = remotecall_fetch(procs[p], mfun, Frefs[p], U[:,idx])
                     end
                 end
             end
