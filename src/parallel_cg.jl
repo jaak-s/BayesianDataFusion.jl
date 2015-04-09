@@ -1,4 +1,5 @@
 export pmult, imult
+export psparse, ParallelSparseMatrix
 
 function normsq{T}(x::Vector{T})
   s = zero(T)
@@ -58,8 +59,34 @@ function parallel_cg(x, A, b;
     x, err, maxiter
 end
 
+type ParallelSparseMatrix
+  F::SparseMatrixCSC
+  refs::Vector{RemoteRef}
+  procs::Vector{Int}
+end
+
+function psparse(F, procs)
+  ParallelSparseMatrix(
+    F,
+    map(i -> @spawnat(i, fetch(F)), procs),
+    procs)
+end
+
+import Base.At_mul_B
+import Base.isempty
+import Base.size
+import Base.eltype
+import Base.Ac_mul_B
+
+At_mul_B(A::ParallelSparseMatrix, U::AbstractMatrix) = pmult(A.F, A.refs, U, A.procs)
+isempty(A::ParallelSparseMatrix) = isempty(A.F)
+size(A::ParallelSparseMatrix)    = size(A.F)
+size(A::ParallelSparseMatrix, i::Int) = size(A.F, i::Int)
+eltype(A::ParallelSparseMatrix)       = eltype(A.F)
+Ac_mul_B(A::ParallelSparseMatrix, B::ParallelSparseMatrix) = Ac_mul_B(A.F, B.F)
+
 function imult(Fref, u)
-  return fetch(Fref) * u
+  return At_mul_B(fetch(Fref), u)
 end
 
 ## setup:
@@ -68,7 +95,7 @@ end
 function pmult(F, Frefs, U, procs)
     np = length(procs)  # determine the number of processes available
     n  = size(U,2)
-    results = zeros(size(F,1), size(U,2))
+    results = zeros(size(F,2), n)
     i = 1
     # function to produce the next work item from the queue.
     # in this case it's just an index.
