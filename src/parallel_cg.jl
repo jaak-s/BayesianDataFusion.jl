@@ -86,6 +86,28 @@ size(A::ParallelSparseMatrix, i::Int) = size(A.F, i::Int)
 eltype(A::ParallelSparseMatrix)       = eltype(A.F)
 Ac_mul_B(A::ParallelSparseMatrix, B::ParallelSparseMatrix) = Ac_mul_B(A.F, B.F)
 
+
+###### CSR matrix ######
+
+type SparseMatrixCSR{Tv,Ti}
+  csc::SparseMatrixCSC{Tv,Ti}
+end
+
+sparse_csr(csc::SparseMatrixCSC) = SparseMatrixCSR(csc')
+
+At_mul_A(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
+*(A::SparseMatrixCSR, u::AbstractVector) = At_mul_B(A.csc, u)
+
+eltype(A::SparseMatrixCSR) = eltype(A.csc)
+function size(A::SparseMatrixCSR)
+  m,n = size(A.csc)
+  return n,m
+end
+size(A::SparseMatrixCSR,i) = (d>n ? 1 : size(A)[d])
+
+
+###### parallel multiplication ######
+
 function imult(Fref, u)
   return At_mul_B(fetch(Fref), u)
 end
