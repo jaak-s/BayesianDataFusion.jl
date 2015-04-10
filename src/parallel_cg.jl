@@ -95,6 +95,7 @@ type SparseMatrixCSR{Tv,Ti}
 end
 
 sparse_csr(csc::SparseMatrixCSC) = SparseMatrixCSR(csc')
+sparse_csr(rows, cols, vals) = SparseMatrixCSR(sparse(cols, rows, vals))
 
 At_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
 Ac_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u

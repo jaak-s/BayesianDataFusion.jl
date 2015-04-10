@@ -20,3 +20,11 @@ v2b = At_mul_B(Xr, y2)
 @test_approx_eq u1 v1
 @test_approx_eq u2 v2a
 @test_approx_eq u2 v2b
+
+rows = [1, 2, 4]
+cols = [2, 1, 3]
+vals = [0.1, 0.2, 0.3]
+z    = rand(3)
+w1   = sparse(rows, cols, vals) * z
+w2   = sparse_csr(rows, cols, vals) * z
+@test_approx_eq w1 w2
