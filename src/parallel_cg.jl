@@ -1,5 +1,6 @@
 export pmult, imult
 export psparse, ParallelSparseMatrix
+export SparseMatrixCSR, sparse_csr
 
 function normsq{T}(x::Vector{T})
   s = zero(T)
@@ -95,7 +96,8 @@ end
 
 sparse_csr(csc::SparseMatrixCSC) = SparseMatrixCSR(csc')
 
-At_mul_A(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
+At_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
+Ac_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
 *(A::SparseMatrixCSR, u::AbstractVector) = At_mul_B(A.csc, u)
 
 eltype(A::SparseMatrixCSR) = eltype(A.csc)
