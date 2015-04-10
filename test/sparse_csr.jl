@@ -5,6 +5,8 @@ X = sprand(50, 100, 0.1)
 Xr = sparse_csr(X)
 
 @test size(X) == size(Xr)
+@test size(X,1) == size(Xr,1)
+@test size(X,2) == size(Xr,2)
 @test eltype(X) == eltype(Xr)
 
 y1 = rand(100)

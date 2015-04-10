@@ -106,7 +106,7 @@ function size(A::SparseMatrixCSR)
   m,n = size(A.csc)
   return n,m
 end
-size(A::SparseMatrixCSR,i) = (d>n ? 1 : size(A)[d])
+size(A::SparseMatrixCSR,d) = (d>2 ? 1 : size(A)[d])
 
 
 ###### parallel multiplication ######
