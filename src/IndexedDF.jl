@@ -25,7 +25,7 @@ IndexedDF(df::DataFrame) = IndexedDF(df, Int64[maximum(df[:,i]) for i in 1 : siz
 valueMean(idf::IndexedDF) = mean(idf.df[:,end])
 import Base.size
 size(idf::IndexedDF) = tuple( [length(i) for i in idf.index]... )
-size(idf::IndexedDF, i::Int64) = length(idf.index[i])
+size(idf::IndexedDF, i::Integer) = length(idf.index[i])
 
 import Base.nnz
 nnz(idf::IndexedDF) = size(idf.df, 1)
@@ -36,7 +36,7 @@ function removeSamples(idf::IndexedDF, samples)
 end
 
 getValues(idf::IndexedDF) = vec(array(idf.df[:, end]))
-getMode(idf::IndexedDF, mode::Int64) = idf.df[:, mode]
-getData(idf::IndexedDF, mode::Int64, i::Int64)  = idf.df[ idf.index[mode][i], :]
-getCount(idf::IndexedDF, mode::Int64, i::Int64) = length( idf.index[mode][i] )
-getI(idf::IndexedDF, mode::Int64, i::Int64)     = idf.index[mode][i]
+getMode(idf::IndexedDF, mode::Integer) = idf.df[:, mode]
+getData(idf::IndexedDF, mode::Integer, i::Integer)  = idf.df[ idf.index[mode][i], :]
+getCount(idf::IndexedDF, mode::Integer, i::Integer) = length( idf.index[mode][i] )
+getI(idf::IndexedDF, mode::Integer, i::Integer)     = idf.index[mode][i]
