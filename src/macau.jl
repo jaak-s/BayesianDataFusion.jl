@@ -24,7 +24,7 @@ function macau(data::RelationData;
     for en in data.entities
       initModel!(en, num_latent, lambda_beta = lambda_beta)
       if hasFeatures(en) && size(en.F,2) <= compute_ff_size
-        en.FF = full(en.F' * en.F)
+        en.FF = full(At_mul_B(en.F, en.F))
       end
     end
     for r in data.relations

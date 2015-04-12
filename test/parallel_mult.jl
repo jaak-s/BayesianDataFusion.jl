@@ -25,4 +25,19 @@ result = macau(rd, burnin = 2, psamples = 2, num_latent=5)
 
 @test size(rd.entities[1].model.beta) == (size(fp,2), 5)
 
+
+########### parallel sparse with CSR ###########
+fp2 = psparse(sparse_csr(X), workers())
+
+Z1r = At_mul_B(fp2, Y1)
+Z2r = fp2 * Y2
+
+@test_approx_eq Z1 Z1r
+@test_approx_eq Z2 Z2r
+
+rd2 = RelationData(W, class_cut = 0.5, feat1 = fp2)
+assignToTest!(rd2.relations[1], 2)
+
+result = macau(rd2, burnin = 2, psamples = 2, num_latent=5)
+
 rmprocs( workers() )

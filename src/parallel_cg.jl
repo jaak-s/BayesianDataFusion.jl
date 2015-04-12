@@ -60,8 +60,8 @@ function parallel_cg(x, A, b;
     x, err, maxiter
 end
 
-type ParallelSparseMatrix
-  F::SparseMatrixCSC
+type ParallelSparseMatrix{TF}
+  F::TF
   refs::Vector{RemoteRef}
   procs::Vector{Int}
 end
@@ -86,6 +86,7 @@ size(A::ParallelSparseMatrix)    = size(A.F)
 size(A::ParallelSparseMatrix, i::Int) = size(A.F, i::Int)
 eltype(A::ParallelSparseMatrix)       = eltype(A.F)
 Ac_mul_B(A::ParallelSparseMatrix, B::ParallelSparseMatrix) = Ac_mul_B(A.F, B.F)
+At_mul_B(A::ParallelSparseMatrix, B::ParallelSparseMatrix) = At_mul_B(A.F, B.F)
 
 
 ###### CSR matrix ######
@@ -100,6 +101,8 @@ sparse_csr(rows, cols, vals) = SparseMatrixCSR(sparse(cols, rows, vals))
 At_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
 Ac_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
 *(A::SparseMatrixCSR, u::AbstractVector) = At_mul_B(A.csc, u)
+At_mul_B(A::SparseMatrixCSR, B::SparseMatrixCSR) = A_mul_Bt(A.csc, B.csc)
+isempty(A::SparseMatrixCSR) = isempty(A.csc)
 
 eltype(A::SparseMatrixCSR) = eltype(A.csc)
 function size(A::SparseMatrixCSR)
