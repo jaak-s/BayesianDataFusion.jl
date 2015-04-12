@@ -18,9 +18,11 @@ data = DataFrame(
         value = rand(1050))
 
 r  = Relation(data, "HPO", [genes, pheno])
+r  = Relation(data, "HPO", [genes, pheno], class_cut = 0.5)
 rd = RelationData()
 addRelation!(rd, r)
 
+@test r.class_cut == 0.5
 @test genes.count == size(r, 1)
 @test pheno.count == size(r, 2)
 @test length(genes.relations) == 1
