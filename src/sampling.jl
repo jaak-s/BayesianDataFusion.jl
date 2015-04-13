@@ -93,7 +93,17 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
   A.rowval[r], A.nzval[r]
 end
 
-function sample_user_old(uu, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent)
+## Sampling U, V for 2-way relation. Used by parallel code
+function sample_latent_all(urange::UnitRange{Int}, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent::Int)
+  U = zeros(length(urange), num_latent)
+  for i in 1:length(urange)
+    u = urange[i]
+    U[i,:] = sample_user_basic(u, Au, mode, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent)
+  end
+  return U
+end
+
+function sample_user_basic(uu::Integer, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent::Int)
   #ff, v = grab_col(Au, uu)
   df = getData(Au, mode, uu)
   ff = df[:, mode == 1 ? 2 : 1]
