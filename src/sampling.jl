@@ -93,8 +93,14 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
   A.rowval[r], A.nzval[r]
 end
 
+function sample_latent_all!(sample_u::Matrix{Float64}, dataRefs::Vector{RemoteRef}, procs::Vector{Int}, mode::Int, idmax::Integer, mean_rating, sample_m::Matrix{Float64}, alpha, mu_u, Lambda_u, num_latent::Int)
+  ## 1. create split ranges 1:length(procs):idmax
+  ## 2. call sample_latent_range at each worker with its dataRef
+  ## 3. store the results in sample_u using range created in (1)
+end
+
 ## Sampling U, V for 2-way relation. Used by parallel code
-function sample_latent_all(urange::UnitRange{Int}, Au::IndexedDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent::Int)
+function sample_latent_range(urange::AbstractVector{Int}, Au::FastIDF, mode::Int, mean_rating, sample_m, alpha, mu_u, Lambda_u, num_latent::Int)
   U = zeros(length(urange), num_latent)
   for i in 1:length(urange)
     u = urange[i]

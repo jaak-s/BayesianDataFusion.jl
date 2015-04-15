@@ -40,3 +40,18 @@ getMode(idf::IndexedDF, mode::Integer) = idf.df[:, mode]
 getData(idf::IndexedDF, mode::Integer, i::Integer)  = idf.df[ idf.index[mode][i], :]
 getCount(idf::IndexedDF, mode::Integer, i::Integer) = length( idf.index[mode][i] )
 getI(idf::IndexedDF, mode::Integer, i::Integer)     = idf.index[mode][i]
+
+## FastIDF used in sampling of latent variables
+type FastIDF{Ti,Tv}
+  i1::Vector{Ti}
+  i2::Vector{Ti}
+  values::Vector{Tv}
+  index::Vector{Vector{Vector{Int64}}}
+end
+
+FastIDF(idf::IndexedDF) = FastIDF(array(idf.df[:,1]), array(idf.df[:,2]), array(idf.df[:,end]), idf.index)
+
+function getData(f::FastIDF, mode::Integer, i::Integer)
+  id = f.index[mode][i]
+  return f.i1[id], f.i2[id], f.values[id]
+end
