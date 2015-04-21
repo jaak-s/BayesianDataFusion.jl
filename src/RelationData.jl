@@ -201,6 +201,23 @@ function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   return RelationData(idf; kw...)
 end
 
+function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500)
+  for en in data.entities
+    initModel!(en, num_latent, lambda_beta = lambda_beta)
+    if hasFeatures(en) && size(en.F,2) <= compute_ff_size
+      en.FF = full(At_mul_B(en.F, en.F))
+    end
+  end
+  for r in data.relations
+    r.model.mean_value    = valueMean(r.data)
+    r.temp = RelationTemp()
+    if hasFeatures(r) && size(r.F,2) <= compute_ff_size
+      r.temp.linear_values = r.model.mean_value * ones(numData(r))
+      r.temp.FF = full(r.F' * r.F)
+    end
+  end
+end
+
 function addRelation!(rd::RelationData, r::Relation)
   if length(size(r)) != length(r.entities)
     throw(ArgumentError("Relation has $(length(r.entities)) entities but its data implies $(size(r))."))

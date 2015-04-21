@@ -21,20 +21,7 @@ function macau(data::RelationData;
   verbose && println("Model setup")
 
   if reset_model
-    for en in data.entities
-      initModel!(en, num_latent, lambda_beta = lambda_beta)
-      if hasFeatures(en) && size(en.F,2) <= compute_ff_size
-        en.FF = full(At_mul_B(en.F, en.F))
-      end
-    end
-    for r in data.relations
-      r.model.mean_value    = valueMean(r.data)
-      r.temp = RelationTemp()
-      if hasFeatures(r) && size(r.F,2) <= compute_ff_size
-        r.temp.linear_values = r.model.mean_value * ones(numData(r))
-        r.temp.FF = full(r.F' * r.F)
-      end
-    end
+    reset!(data, num_latent, lambda_beta = lambda_beta, compute_ff_size = compute_ff_size)
   end
 
   modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
