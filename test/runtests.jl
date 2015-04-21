@@ -17,6 +17,19 @@ x12 = getData(X, 1, 2)
 
 @test size(getData(X, 2, 2)) == (0,3)
 
+# FastIDF
+Xf = FastIDF(X)
+@test nnz(Xf) == 3
+@test size(getData(Xf, 1, 1)[1]) == (0,2)
+@test size(getData(Xf, 1, 1)[2]) == (0,)
+x12f = getData(Xf, 1, 2)
+@test x12f[1][:,1] == [2,2]
+@test x12f[1][:,2] == [1,3]
+@test x12f[2] == [0., -1.]
+
+Xf32 = FastIDF(IndexedDF(DataFrame(A=Int32[1,2,3], B=Int32[1,2,3], C=Float32[0.5, -0.1, 0.0])))
+@test typeof(Xf32) == FastIDF{Int32, Float32}
+
 # IndexedDF with tuple input
 X2 = IndexedDF(DataFrame(A=[2,2,3], B=[1,3,4], C=[0., -1., 0.5]), (4,4))
 @test size(X2) == (4,4)

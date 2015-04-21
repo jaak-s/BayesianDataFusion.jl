@@ -1,6 +1,7 @@
 using DataFrames
 
 export IndexedDF, getData, getCount, removeSamples, getValues, valueMean
+export FastIDF
 
 type IndexedDF
   df::DataFrame
@@ -43,15 +44,19 @@ getI(idf::IndexedDF, mode::Integer, i::Integer)     = idf.index[mode][i]
 
 ## FastIDF used in sampling of latent variables
 type FastIDF{Ti,Tv}
-  i1::Vector{Ti}
-  i2::Vector{Ti}
+  ids::Matrix{Ti}
   values::Vector{Tv}
   index::Vector{Vector{Vector{Int64}}}
 end
 
-FastIDF(idf::IndexedDF) = FastIDF(array(idf.df[:,1]), array(idf.df[:,2]), array(idf.df[:,end]), idf.index)
+FastIDF(idf::IndexedDF) = FastIDF(array(idf.df[:,1:end-1]), array(idf.df[:,end]), idf.index)
 
 function getData(f::FastIDF, mode::Integer, i::Integer)
   id = f.index[mode][i]
-  return f.i1[id], f.i2[id], f.values[id]
+  return f.ids[id,:], f.values[id]
 end
+
+import Base.size, Base.nnz
+size(f::FastIDF) = tuple( [length(i) for i in f.index]... )
+size(f::FastIDF, i::Integer) = length(f.index[i])
+nnz(f::FastIDF) = size(f.values, 1)
