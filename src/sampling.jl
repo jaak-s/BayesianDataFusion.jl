@@ -159,7 +159,22 @@ function sample_user_basic(uu::Integer, Au::FastIDF, mode::Int, mean_rating, sam
   chol(covar)' * randn(length(mu_u)) + mu
 end
 
-function sample_user2(s::Entity, i::Int, mu_si, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})
+function sample_user2_all!(s::Entity, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})
+  msample = s.model.sample
+  mu      = s.model.mu
+  for mm = 1:s.count
+    msample[mm, :] = sample_user2(s, mm, mu, modes, modes_other)
+  end
+end
+
+function sample_user2_all!(s::Entity, mu_matrix::Matrix{Float64}, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})
+  msample = s.model.sample
+  for mm = 1:s.count
+    msample[mm, :] = sample_user2(s, mm, mu_matrix[:,mm], modes, modes_other)
+  end
+end
+
+function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})
   Lambda_si = copy(s.model.Lambda)
   mux       = s.model.Lambda * mu_si
 

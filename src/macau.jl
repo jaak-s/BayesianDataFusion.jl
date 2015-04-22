@@ -12,7 +12,7 @@ function macau(data::RelationData;
               full_lambda_u   = false,
               reset_model     = true,
               compute_ff_size = 6500,
-              latent_pids     = workers(),
+              latent_pids     = Int[],
               latent_blas_threads = 4,
               full_prediction = false,
               clamp::Vector{Float64}  = Float64[],
@@ -117,9 +117,11 @@ function macau(data::RelationData;
         end
       else
         ## single thread
-        for mm = 1:data.entities[j].count
-          mu_mm = hasFeatures(data.entities[j]) ? mj.mu + uhat[mm,:]' : mj.mu
-          mj.sample[mm, :] = sample_user2(data.entities[j], mm, mu_mm, modes[j], modes_other[j])
+        if hasFeatures(en)
+          mu_matrix = mj.mu .+ uhat'
+          sample_user2_all!(data.entities[j], mu_matrix, modes[j], modes_other[j])
+        else
+          sample_user2_all!(data.entities[j], modes[j], modes_other[j])
         end
       end
 
