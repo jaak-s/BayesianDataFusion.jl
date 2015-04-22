@@ -13,6 +13,7 @@ function macau(data::RelationData;
               reset_model     = true,
               compute_ff_size = 6500,
               latent_pids     = workers(),
+              latent_blas_threads = 4,
               full_prediction = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
@@ -46,6 +47,12 @@ function macau(data::RelationData;
        println("Setting up multi-threaded sampling of latent vectors. Using $(length(latent_pids)) threads.")
        fastidf = FastIDF(data.relations[1].data)
        latent_data_refs = map( i -> @spawnat( latent_pids[i], fetch(fastidf)), 1:length(latent_pids) )
+       ## setting blas threads
+       if latent_blas_threads >= 1
+         for p in latent_pids
+           remotecall_wait(p, blas_set_num_threads, latent_blas_threads)
+         end
+       end
     else
       println("Cannot use multi-threaded sampling of latent vectors, only works if 1 relation and 2 entities.")
     end
