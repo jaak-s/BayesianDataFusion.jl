@@ -12,6 +12,7 @@ function macau(data::RelationData;
               full_lambda_u   = false,
               reset_model     = true,
               compute_ff_size = 6500,
+              latent_pids     = workers(),
               full_prediction = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
@@ -30,6 +31,24 @@ function macau(data::RelationData;
                      data.entities)
   if full_prediction
     yhat_full = zeros(size(data.relations[1]))
+  end
+
+  latent_multi_threading = false
+  local latent_data_refs
+
+  if length(latent_pids) > 1
+    ## initializing multi-threaded latent sampling:
+    if length(data.relations) == 1 &&
+       length(data.entities)  == 2 &&
+       ! hasFeatures(data.relations[1])
+
+       latent_multi_threading = true
+       println("Setting up multi-threaded sampling of latent vectors. Using $(length(latent_pids)) threads.")
+       fastidf = FastIDF(data.relations[1].data)
+       latent_data_refs = map( i -> @spawnat( latent_pids[i], fetch(fastidf)), 1:length(latent_pids) )
+    else
+      println("Cannot use multi-threaded sampling of latent vectors, only works if 1 relation and 2 entities.")
+    end
   end
 
   verbose && println("Sampling")
@@ -81,10 +100,20 @@ function macau(data::RelationData;
       mj.mu, mj.Lambda = rand( ConditionalNormalWishart(U, mj.mu0, mj.b0, Tinv, nu) )
 
       # latent vectors
-      for mm = 1:data.entities[j].count
-        mu_mm = hasFeatures(data.entities[j]) ? mj.mu + uhat[mm,:]' : mj.mu
-        #mj.sample[mm, :] = sample_user(mm, rel.data, j, rel.mean_rating, data.entities[j2].model.sample, rel.model.alpha, mu_mm, mj.Lambda, num_latent)
-        mj.sample[mm, :] = sample_user2(data.entities[j], mm, mu_mm, modes[j], modes_other[j])
+      if latent_multi_threading
+        sample_v = data.entities[j == 1 ? 2 : 1].model.sample
+        if hasFeatures(en)
+          mu_matrix = mj.mu .+ uhat'
+          sample_latent_all!(mj.sample, latent_data_refs, latent_pids, modes[j][1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mu_matrix, mj.Lambda)
+        else
+          sample_latent_all!(mj.sample, latent_data_refs, latent_pids, modes[j][1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mj.mu, mj.Lambda)
+        end
+      else
+        ## single thread
+        for mm = 1:data.entities[j].count
+          mu_mm = hasFeatures(data.entities[j]) ? mj.mu + uhat[mm,:]' : mj.mu
+          mj.sample[mm, :] = sample_user2(data.entities[j], mm, mu_mm, modes[j], modes_other[j])
+        end
       end
 
       if hasFeatures( data.entities[j] )
@@ -178,5 +207,6 @@ function macau(data::RelationData;
   if typeof(f) <: Function
     result["f_output"] = f_output
   end
+  result["latent_multi_threading"] = latent_multi_threading
   return result
 end
