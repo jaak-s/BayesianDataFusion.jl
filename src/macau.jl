@@ -15,6 +15,7 @@ function macau(data::RelationData;
               latent_pids     = Int[],
               latent_blas_threads = 4,
               full_prediction = false,
+              rmse_train      = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
@@ -136,22 +137,27 @@ function macau(data::RelationData;
 
     rel = data.relations[1]
     probe_rat = pred(rel, rel.test_vec, rel.test_F)
-    train_rat = pred(rel)
 
     if full_prediction && i > burnin
       yhat_full += pred_all( data.relations[1] )
     end
 
     if i > burnin
-      train_rat = pred(rel)
+      if rmse_train
+        train_rat = pred(rel)
+      end
       if i == burnin + 1
         verbose && println("--------- Burn-in complete, averaging posterior samples ----------")
         counter_prob  = 1
         probe_rat_all = probe_rat
-        train_rat_all = train_rat
+        if rmse_train
+          train_rat_all = train_rat
+        end
       else
         probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
-        train_rat_all = (counter_prob*train_rat_all + train_rat)/(counter_prob+1)
+        if rmse_train
+          train_rat_all = (counter_prob*train_rat_all + train_rat)/(counter_prob+1)
+        end
         counter_prob  = counter_prob + 1
       end
     else
@@ -186,8 +192,6 @@ function macau(data::RelationData;
       end
     end
   end
-  ## calculating prediction on training set
-  train_cl = isempty(clamp) ?train_rat_all :makeClamped(train_rat_all, clamp)
 
   result = Dict{String,Any}()
   result["num_latent"]  = num_latent
@@ -197,7 +201,11 @@ function macau(data::RelationData;
   result["RMSE"]        = rmse_avg
   result["accuracy"]    = err_avg
   result["ROC"]         = roc_avg
-  result["RMSE_train"]  = sqrt(mean( (getValues(data.relations[1].data) - train_cl) .^ 2 ))
+  if rmse_train
+    ## calculating prediction on training set
+    train_cl = isempty(clamp) ?train_rat_all :makeClamped(train_rat_all, clamp)
+    result["RMSE_train"]  = sqrt(mean( (getValues(data.relations[1].data) - train_cl) .^ 2 ))
+  end
   if full_prediction
     result["predictions_full"] = yhat_full / psamples
   end

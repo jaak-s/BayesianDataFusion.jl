@@ -82,6 +82,10 @@ x1 = result1["predictions"][1, 1:2]
 y1 = result1["predictions"][:pred][1]
 @test_approx_eq result1["predictions_full"][x1[1], x1[2]] y1
 
+# rmse_train works
+result1a = macau(rd, burnin = 1, psamples = 2, verbose = false, rmse_train = true)
+@test result1a["RMSE_train"] >= 0
+
 # custom function on latent variables
 f1(a) = length(a)
 result2 = macau(rd, burnin = 5, psamples = 6, verbose = false, f = f1)
