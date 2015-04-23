@@ -22,5 +22,3 @@ result = macau(rd, burnin = 10, psamples = 10, num_latent=5, latent_pids=workers
 
 result0 = macau(rd, burnin = 10, psamples = 10, num_latent=5, latent_pids=Int[])
 @test result0["latent_multi_threading"] == false
-
-

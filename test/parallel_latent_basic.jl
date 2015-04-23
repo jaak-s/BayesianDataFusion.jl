@@ -11,7 +11,7 @@ W = sparse(A * B')
 rd = RelationData(W, class_cut = 0.5, feat1 = X)
 assignToTest!(rd.relations[1], 50)
 
-result = macau(rd, burnin = 1, psamples = 1, num_latent=5)
+result = macau(rd, burnin = 1, psamples = 1, num_latent=5, verbose=false)
 
 fdata = FastIDF(rd.relations[1].data)
 
