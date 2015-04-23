@@ -23,6 +23,30 @@ function udot(r::Relation, probe_vec::DataFrame)
   return vec(sum(U, 2))
 end
 
+## faster udot (about 2x) for matrices 
+function udot(r::Relation, probe_vec::Matrix{Integer})
+  if length(size(r)) == 2
+    ## special code for matrix
+    num_latent = size(r.entities[1].model.sample, 2)
+    result = zeros(size(probe_vec, 1))
+    s1 = r.entities[1].model.sample'
+    s2 = r.entities[2].model.sample'
+    for i = 1:length(result)
+      i1 = probe_vec[i,1]
+      i2 = probe_vec[i,2]
+      for k = 1:num_latent
+        result[i] += s1[k,i1] * s2[k,i2]
+      end
+    end
+    return result
+  end
+  U = r.entities[1].model.sample[probe_vec[:,1],:]
+  for i in 2:length(r.entities)
+    U .*= r.entities[i].model.sample[probe_vec[:,i],:]
+  end
+  return vec(sum(U, 2))
+end
+
 ## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for all points in relation r
 function udot_all(r::Relation)
   ## matrix version:
