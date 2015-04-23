@@ -13,7 +13,7 @@ function macau(data::RelationData;
               reset_model     = true,
               compute_ff_size = 6500,
               latent_pids     = Int[],
-              latent_blas_threads = 4,
+              latent_blas_threads = 1,
               full_prediction = false,
               rmse_train      = false,
               clamp::Vector{Float64}  = Float64[],
