@@ -36,7 +36,7 @@ function parallel_cg(x, A, b;
     p = copy(r)
     bkden = zero(eltype(x))
     err   = norm(r)
-    
+
     for iter = 1:maxiter
         err < tol && return x, err, iter
         bknum = normsq(r)
@@ -55,7 +55,6 @@ function parallel_cg(x, A, b;
         sub_prod!(r, ak, z)
         
         err = norm(r)
-        println(err)
     end
     x, err, maxiter
 end
