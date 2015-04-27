@@ -133,9 +133,7 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          sbms_ref  = A.sbms[p]
-          logic_ref = A.logic[p]
-          @spawnat pid partmul(y, fetch(sbms_ref), fetch(logic_ref), x)
+          remotecall_wait(pid, partmul_ref, y, A.sbms[p], A.logic[p], x)
         end
       end
     end
@@ -202,6 +200,12 @@ function partmul_time{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::Paral
   tic();
   partmul(y, A, logic, x)
   return toq()
+end
+
+function partmul_ref{Tx}(y::SharedArray{Tx,1}, A::RemoteRef, logic::RemoteRef, x::SharedArray{Tx,1})
+  Aloc     = fetch(A)::SparseBinMatrix
+  logicloc = fetch(logic)::ParallelLogic
+  partmul(y, Aloc, logicloc, x)
 end
 
 ## assumes sizes are correct
