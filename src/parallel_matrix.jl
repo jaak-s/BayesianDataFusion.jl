@@ -191,7 +191,7 @@ function add!{Tx}(to::AbstractArray{Tx,1}, from::AbstractArray{Tx,1}, range)
   return nothing
 end
 
-function fill!{Tx}(x::AbstractArray{Tx,1}, v::Tx, range)
+function rangefill!{Tx}(x::AbstractArray{Tx,1}, v::Tx, range)
   @inbounds @simd for i in range
     x[i] = v
   end
@@ -208,7 +208,7 @@ end
 function partmul{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLogic, x::SharedArray{Tx,1})
   ylocal = logic.localm
   xlocal = logic.localn
-  fill!(ylocal, zero(Tx), A.mrange)
+  rangefill!(ylocal, zero(Tx), A.mrange)
   copy!(xlocal, x, A.nrange)
   ## standard y = A * x
   rows = A.rows
