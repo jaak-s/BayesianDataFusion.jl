@@ -146,6 +146,35 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
   ## done
 end
 
+function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}, ntimes::Int)
+  A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
+  A.m == length(y) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(y))"))
+  ptime = zeros(length(A.pids))
+  for i = 1:ntimes+1
+    y[1:end] = zero(Tx)
+    ## clearing warmup results
+    if i == 2
+      ptime[1:end] = 0.0
+    end
+    @sync begin
+      for p in 1:length(A.pids)
+        pid = A.pids[p]
+        if pid != myid() || np == 1
+          @async begin
+            sbms_ref  = A.sbms[p]
+            logic_ref = A.logic[p]
+            ptime[p] += fetch(@spawnat pid partmul_time(y, fetch(sbms_ref), fetch(logic_ref), x))
+          end
+        end
+      end
+    end
+  end
+  if A.error[1] != 0
+    error("Mutex error occured")
+  end
+  return ptime
+end
+
 make_mutex(nblocks) = SharedArray(Int, nblocks*8)
 
 function copy!{Tx}(to::AbstractArray{Tx,1}, from::AbstractArray{Tx,1}, range)
@@ -167,6 +196,12 @@ function fill!{Tx}(x::AbstractArray{Tx,1}, v::Tx, range)
     x[i] = v
   end
   return nothing
+end
+
+function partmul_time{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLogic, x::SharedArray{Tx,1})
+  tic();
+  partmul(y, A, logic, x)
+  return toq()
 end
 
 ## assumes sizes are correct

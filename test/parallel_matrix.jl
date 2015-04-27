@@ -62,3 +62,6 @@ A_mul_B!(y, A, x)
 B = sparse(rows, cols, 1.0)
 
 @test_approx_eq y B*x
+
+## measuring time
+ctimes = BayesianDataFusion.A_mul_B!_time(y, A, x, 3)
