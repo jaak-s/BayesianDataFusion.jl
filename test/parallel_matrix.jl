@@ -65,3 +65,4 @@ B = sparse(rows, cols, 1.0)
 
 ## measuring time
 ctimes = BayesianDataFusion.A_mul_B!_time(y, A, x, 3)
+@test length(ctimes) == 2

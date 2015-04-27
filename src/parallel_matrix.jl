@@ -159,9 +159,7 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
         pid = A.pids[p]
         if pid != myid() || np == 1
           @async begin
-            sbms_ref  = A.sbms[p]
-            logic_ref = A.logic[p]
-            ptime[p] += fetch(@spawnat pid partmul_time(y, fetch(sbms_ref), fetch(logic_ref), x))
+            ptime[p] += remotecall_fetch(pid, partmul_time, y, A.sbms[p], A.logic[p], x)
           end
         end
       end
@@ -170,7 +168,7 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
   if A.error[1] != 0
     error("Mutex error occured")
   end
-  return ptime
+  return ptime / ntimes
 end
 
 make_mutex(nblocks) = SharedArray(Int, nblocks*8)
@@ -196,16 +194,18 @@ function rangefill!{Tx}(x::AbstractArray{Tx,1}, v::Tx, range)
   return nothing
 end
 
-function partmul_time{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLogic, x::SharedArray{Tx,1})
+function partmul_time{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::RemoteRef, x::SharedArray{Tx,1})
+  A     = fetch(Aref)::SparseBinMatrix
+  logic = fetch(logicref)::ParallelLogic
   tic();
   partmul(y, A, logic, x)
   return toq()
 end
 
-function partmul_ref{Tx}(y::SharedArray{Tx,1}, A::RemoteRef, logic::RemoteRef, x::SharedArray{Tx,1})
-  Aloc     = fetch(A)::SparseBinMatrix
-  logicloc = fetch(logic)::ParallelLogic
-  partmul(y, Aloc, logicloc, x)
+function partmul_ref{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::RemoteRef, x::SharedArray{Tx,1})
+  A     = fetch(Aref)::SparseBinMatrix
+  logic = fetch(logicref)::ParallelLogic
+  partmul(y, A, logic, x)
 end
 
 ## assumes sizes are correct
