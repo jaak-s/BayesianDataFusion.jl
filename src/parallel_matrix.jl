@@ -45,7 +45,7 @@ type ParallelSBM
   error::SharedArray{Int,1} ## keeping sync errors
 end
 
-function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)+2 )
+function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
   length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
 
   ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], SharedArray(Int,8))
@@ -69,7 +69,7 @@ end
 gmeans(x) = prod(x) ^ (1 / length(x))
 pretty(x) = "[" * join([@sprintf("%.3f", i) for i in x], ", ") * "]"
 
-function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4, ntotal=30, keeplast=4, verbose=false)
+function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)*2, niter=4, ntotal=30, keeplast=4, verbose=false)
   weights = ones(length(pids))
   y = SharedArray(Float64, convert(Int, maximum(rows)) )
   x = SharedArray(Float64, convert(Int, maximum(cols)) )
