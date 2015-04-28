@@ -64,16 +64,21 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
   return ps
 end
 
-function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4)
+gmeans(x) = prod(x) ^ (1 / length(x))
+
+function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4, nmult=5, verbose=false)
   weights = ones(length(pids))
   y = SharedArray(Float64, convert(Int, maximum(rows)) )
   x = SharedArray(Float64, convert(Int, maximum(cols)) )
   local psbm
   for i = 1:niter
     psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
-    ctimes = A_mul_B!_time(y, psbm, x, 5)
-    weights = weights ./ ctimes
-    weights = weights / sum(weights)
+    ctimes = A_mul_B!_time(y, psbm, x, nmult)
+    meantime  = gmeans(ctimes)
+    weights .*= (meantime ./ ctimes) .^ (1/i)
+    weights   = weights ./ sum(weights)
+    verbose && println("ctimes  = ", ctimes)
+    verbose && println("weights = ", weights)
   end
   return psbm
 end
