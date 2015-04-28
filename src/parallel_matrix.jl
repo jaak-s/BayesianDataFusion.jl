@@ -247,7 +247,7 @@ function partmul{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLo
 end
 
 ## does y += x
-function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, mutex::SharedArray{Int,1}, ranges::Vector{UnitRange{Int32}}, order, mutex_error::SharedArray{Int,1}, yrange)
+function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, mutex::SharedArray{Int,1}, ranges, order, mutex_error::SharedArray{Int,1}, yrange)
   blocks = copy(order)
   nblocks = length(blocks)
   pid = myid()
@@ -282,7 +282,7 @@ function ask_for_lock!(mutex, block::Int, pid::Int)
     return m == pid
   end
   mutex[i] = pid
-  busywait(mutex, i, pid, 30)
+  busywait(mutex, i, pid, 15)
   return mutex[i] == pid
 end
 

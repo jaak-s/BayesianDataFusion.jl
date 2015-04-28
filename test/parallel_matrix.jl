@@ -11,7 +11,7 @@ merror = SharedArray(Int, 8)
 mutex  = BayesianDataFusion.make_mutex(10)
 ranges = [1+(i-1)*100 : i*100 for i in 1:10]
 
-addshared!(y, ylocal, mutex, ranges, [2,3], merror)
+addshared!(y, ylocal, mutex, ranges, [2,3], merror, 1:1000)
 
 @test_approx_eq y[ranges[1]] zeros(100)
 @test_approx_eq y[ranges[2]] ylocal[ranges[2]]
