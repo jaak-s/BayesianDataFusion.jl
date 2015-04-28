@@ -242,12 +242,12 @@ function partmul{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLo
       ylocal[rows[i]] += xlocal[cols[i]]
   end
   ## adding the result to shared array
-  addshared!(y, ylocal, logic.mutex, logic.mblocks, logic.mblock_order, logic.error)
+  addshared!(y, ylocal, logic.mutex, logic.mblocks, logic.mblock_order, logic.error, A.mrange)
   return nothing
 end
 
 ## does y += x
-function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, mutex::SharedArray{Int,1}, ranges, order, mutex_error::SharedArray{Int,1})
+function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, mutex::SharedArray{Int,1}, ranges::Vector{UnitRange{Int32}}, order, mutex_error::SharedArray{Int,1}, yrange)
   blocks = copy(order)
   nblocks = length(blocks)
   pid = myid()
@@ -261,7 +261,7 @@ function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, mutex::Sha
         continue
       end
       ## copying result to shared array
-      add!(y, x, ranges[blocks[j]])
+      add!(y, x, intersect(ranges[blocks[j]], yrange) )
       if ! release_lock!(mutex, blocks[j], pid)
         ## release failed, some error
         mutex_error[1] = 1
