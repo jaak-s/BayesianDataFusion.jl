@@ -69,15 +69,16 @@ end
 gmeans(x) = prod(x) ^ (1 / length(x))
 pretty(x) = "[" * join([@sprintf("%.3f", i) for i in x], ", ") * "]"
 
-function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4, nmult=5, verbose=false)
+function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4, ntotal=30, keeplast=4, verbose=false)
   weights = ones(length(pids))
   y = SharedArray(Float64, convert(Int, maximum(rows)) )
   x = SharedArray(Float64, convert(Int, maximum(cols)) )
   local psbm
   for i = 1:niter
     psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
-    times  = A_mul_B!_time(y, psbm, x, nmult)
-    ctimes = vec(median(times, 2))
+    times  = A_mul_B!_time(y, psbm, x, ntotal)
+    #ctimes = vec(median(times, 2))
+    ctimes = vec(sum(times[:,end-keeplast:end], 2))
     meantime  = gmeans(ctimes)
     weights .*= (meantime ./ ctimes) .^ (1/i)
     weights   = weights ./ sum(weights)
