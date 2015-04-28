@@ -1,6 +1,6 @@
 #module ParallelMatrix
 
-export SparseBinMatrix, ParallelLogic, ParallelSBM
+export SparseBinMatrix, ParallelLogic, ParallelSBM, balanced_parallelsbm
 export addshared!, ask_for_lock!, release_lock!
 export sort_hilbert
 
@@ -62,6 +62,20 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
     push!(ps.logic, pl_ref)
   end
   return ps
+end
+
+function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4)
+  weights = ones(length(pids))
+  y = SharedArray(Float64, convert(Int, maximum(rows)) )
+  x = SharedArray(Float64, convert(Int, maximum(cols)) )
+  local psbm
+  for i = 1:niter
+    psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
+    ctimes = A_mul_B!_time(y, psbm, x, 5)
+    weights = weights ./ ctimes
+    weights = weights / sum(weights)
+  end
+  return psbm
 end
 
 function make_blocks(n::Int32, nblocks::Int32)
