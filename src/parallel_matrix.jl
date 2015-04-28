@@ -80,7 +80,7 @@ function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Ve
     #ctimes = vec(median(times, 2))
     ctimes = vec(sum(times[:,end-keeplast:end], 2))
     meantime  = gmeans(ctimes)
-    weights .*= (meantime ./ ctimes) .^ (1/i)
+    weights .*= (meantime ./ ctimes) .^ (1/(1+0.2*i))
     weights   = weights ./ sum(weights)
     verbose && println("$i. ctimes  = ", pretty(ctimes) )
     verbose && println("$i. weights = ", pretty(weights) )
