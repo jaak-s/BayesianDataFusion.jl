@@ -65,6 +65,7 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
 end
 
 gmeans(x) = prod(x) ^ (1 / length(x))
+pretty(x) = "[" * join([@sprintf("%.3f", i) for i in x], ", ") * "]"
 
 function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)+2, niter=4, nmult=5, verbose=false)
   weights = ones(length(pids))
@@ -73,12 +74,13 @@ function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Ve
   local psbm
   for i = 1:niter
     psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
-    ctimes = A_mul_B!_time(y, psbm, x, nmult)
+    times  = A_mul_B!_time(y, psbm, x, nmult)
+    ctimes = vec(median(times, 2))
     meantime  = gmeans(ctimes)
     weights .*= (meantime ./ ctimes) .^ (1/i)
     weights   = weights ./ sum(weights)
-    verbose && println("ctimes  = ", ctimes)
-    verbose && println("weights = ", weights)
+    verbose && println("$i. ctimes  = ", pretty(ctimes) )
+    verbose && println("$i. weights = ", pretty(weights) )
   end
   return psbm
 end
@@ -166,19 +168,16 @@ end
 function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}, ntimes::Int)
   A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
   A.m == length(y) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(y))"))
-  ptime = zeros(length(A.pids))
-  for i = 1:ntimes+1
+  ptime = zeros(length(A.pids), ntimes)
+  for i = 1:ntimes
     y[1:end] = zero(Tx)
     ## clearing warmup results
-    if i == 2
-      ptime[1:end] = 0.0
-    end
     @sync begin
       for p in 1:length(A.pids)
         pid = A.pids[p]
         if pid != myid() || np == 1
           @async begin
-            ptime[p] += remotecall_fetch(pid, partmul_time, y, A.sbms[p], A.logic[p], x)
+            ptime[p, i] += remotecall_fetch(pid, partmul_time, y, A.sbms[p], A.logic[p], x)
           end
         end
       end
@@ -187,7 +186,7 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
   if A.error[1] != 0
     error("Mutex error occured")
   end
-  return ptime / ntimes
+  return ptime
 end
 
 make_mutex(nblocks) = SharedArray(Int, nblocks*8)
