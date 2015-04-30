@@ -86,7 +86,7 @@ function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Ve
     psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
     times  = A_mul_B!_time(y, psbm, x, ntotal)
     #ctimes = vec(median(times, 2))
-    ctimes = vec(gmean(times[:,end-keeplast:end], 2))
+    ctimes = vec(mean(times[:,end-keeplast:end], 2))
     meantime  = gmean(ctimes)
     weights .*= (meantime ./ ctimes) .^ (1/(1+0.2*i))
     weights   = weights ./ sum(weights)
