@@ -74,7 +74,7 @@ sem_wait(x::SharedArray)    = ccall(:sem_wait, Cint, (Ptr{Void},), x)
 sem_trywait(x::SharedArray) = ccall(:sem_trywait, Cint, (Ptr{Void},), x)
 sem_post(x::SharedArray)    = ccall(:sem_post, Cint, (Ptr{Void},), x)
 
-gmeans(x) = prod(x) ^ (1 / length(x))
+gmean(x) = prod(x) ^ (1 / length(x))
 pretty(x) = "[" * join([@sprintf("%.3f", i) for i in x], ", ") * "]"
 
 function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; numblocks=length(pids)*2, niter=4, ntotal=30, keeplast=4, verbose=false)
@@ -86,8 +86,8 @@ function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Ve
     psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
     times  = A_mul_B!_time(y, psbm, x, ntotal)
     #ctimes = vec(median(times, 2))
-    ctimes = vec(sum(times[:,end-keeplast:end], 2))
-    meantime  = gmeans(ctimes)
+    ctimes = vec(gmean(times[:,end-keeplast:end], 2))
+    meantime  = gmean(ctimes)
     weights .*= (meantime ./ ctimes) .^ (1/(1+0.2*i))
     weights   = weights ./ sum(weights)
     verbose && println("$i. ctimes  = ", pretty(ctimes) )
