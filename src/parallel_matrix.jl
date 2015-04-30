@@ -29,10 +29,9 @@ type ParallelLogic
   localm::Vector{Float64}
   localn::Vector{Float64}
 
-  ## block mutex: every 1:8:(nblocks*8+1)
-  mutex::SharedArray{Int,1}
-  ## array to store error
-  error::SharedArray{Int,1}
+  ## semaphores
+  tmp::SharedVector{Float64}
+  sems::Vector{SharedArray{Uint32,1}}
 end
 
 type ParallelSBM
@@ -42,29 +41,38 @@ type ParallelSBM
   sbms::Vector{RemoteRef}  ## SparseBinMatrix
   logic::Vector{RemoteRef} ## ParallelLogic
 
-  error::SharedArray{Int,1} ## keeping sync errors
+  tmp::SharedVector{Float64}  ## for storing middle vector in A'A 
+  sems::Vector{SharedArray{Uint32,1}} ## semaphores
 end
 
-function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
+function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}=Int[]; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
   length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
 
-  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], SharedArray(Int,8))
+  sems = SharedArray{Uint32,1}[SharedArray(Uint32, 16, pids=pids) for i=1:numblocks]
+  for sem in sems
+    sem_init(sem)
+  end
+  shtmp = SharedArray(Float64, convert(Int, m), pids=pids)
+  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], shtmp, sems)
   ranges  = make_lengths(length(rows), weights)
   mblocks = make_blocks(m, convert(Int32, numblocks) )
   nblocks = make_blocks(n, convert(Int32, numblocks) )
-  mutex   = make_mutex(numblocks)
-  merror  = SharedArray(Int, 8)
   for i in 1:length(pids)
     sbm = SparseBinMatrix(m, n, rows[ranges[i]], cols[ranges[i]])
     sbm_ref = @spawnat pids[i] fetch(sbm)
     push!(ps.sbms, sbm_ref)
     mb = find([! isempty(intersect(sbm.mrange, i)) for i in mblocks])
     nb = find([! isempty(intersect(sbm.nrange, i)) for i in nblocks])
-    pl_ref = @spawnat pids[i] ParallelLogic(mblocks, nblocks, mb, nb, zeros(m), zeros(n), mutex, merror)
+    pl_ref = @spawnat pids[i] ParallelLogic(mblocks, nblocks, mb, nb, zeros(m), zeros(n), ps.tmp, sems )
     push!(ps.logic, pl_ref)
   end
   return ps
 end
+
+sem_init(x::SharedArray)    = ccall(:sem_init, Cint, (Ptr{Void}, Cint, Cuint), x, 1, one(Uint32))
+sem_wait(x::SharedArray)    = ccall(:sem_wait, Cint, (Ptr{Void},), x)
+sem_trywait(x::SharedArray) = ccall(:sem_trywait, Cint, (Ptr{Void},), x)
+sem_post(x::SharedArray)    = ccall(:sem_post, Cint, (Ptr{Void},), x)
 
 gmeans(x) = prod(x) ^ (1 / length(x))
 pretty(x) = "[" * join([@sprintf("%.3f", i) for i in x], ", ") * "]"
@@ -162,10 +170,25 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
       end
     end
   end
-  if A.error[1] != 0
-    error("Mutex error occured")
-  end
   ## done
+end
+
+## computes A'A*x + lambda*x
+function AtA_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}, lambda::Float64)
+  A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
+  A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(y)=$(length(y))"))
+  y[1:end] = zero(Tx)
+  @sync begin
+    for p in 1:length(A.pids)
+      pid = A.pids[p]
+      if pid != myid() || np == 1
+        @async begin
+          remotecall_wait(pid, partmul_ref, y, A.sbms[p], A.logic[p], x)
+        end
+      end
+    end
+  end
+  ## TODO
 end
 
 function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}, ntimes::Int)
@@ -186,13 +209,8 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
       end
     end
   end
-  if A.error[1] != 0
-    error("Mutex error occured")
-  end
   return ptime
 end
-
-make_mutex(nblocks) = SharedArray(Int, nblocks*8)
 
 function copy!{Tx}(to::AbstractArray{Tx,1}, from::AbstractArray{Tx,1}, range)
   @inbounds @simd for i in range
@@ -242,56 +260,34 @@ function partmul{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLo
       ylocal[rows[i]] += xlocal[cols[i]]
   end
   ## adding the result to shared array
-  addshared!(y, ylocal, logic.mutex, logic.mblocks, logic.mblock_order, logic.error, A.mrange)
+  addshared!(y, ylocal, logic.sems, logic.mblocks, logic.mblock_order, A.mrange)
   return nothing
 end
 
 ## does y += x
-function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, mutex::SharedArray{Int,1}, ranges, order, mutex_error::SharedArray{Int,1}, yrange)
+function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, sems, ranges, order, yrange)
   blocks = copy(order)
   nblocks = length(blocks)
   pid = myid()
   while true
     i = findfirst(blocks)
-    i <= 0 && return ## done
+    i <= 0 && return nothing ## done
     for j = i:nblocks
-      blocks[j] == 0 && continue
+      block = blocks[j]
+      block == 0 && continue
       ## try to get a lock
-      if ! ask_for_lock!(mutex, blocks[j], pid)
+      if sem_trywait( sems[block] ) < 0
+        ## didn't get lock
         continue
       end
       ## copying result to shared array
       add!(y, x, intersect(ranges[blocks[j]], yrange) )
-      if ! release_lock!(mutex, blocks[j], pid)
-        ## release failed, some error
-        mutex_error[1] = 1
-        return
-      end
+      sem_post( sems[block] )
       blocks[j] = 0
-      break
+      #break
     end
   end
   return nothing
-end
-
-## ask for a lock for block
-function ask_for_lock!(mutex, block::Int, pid::Int)
-  i = 1 + (block-1)*8
-  m = mutex[i]
-  if m != 0
-    return m == pid
-  end
-  mutex[i] = pid
-  busywait(mutex, i, pid, 15)
-  return mutex[i] == pid
-end
-
-## releases lock, if not correct pid returns false
-function release_lock!(mutex, block::Int, pid::Int)
-  i = 1 + (block-1)*8
-  mutex[i] != pid && return false
-  mutex[i] = 0
-  return true
 end
 
 function At_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1})

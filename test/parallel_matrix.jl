@@ -2,36 +2,6 @@ using BayesianDataFusion
 #using BayesianDataFusion.ParallelMatrix
 using Base.Test
 
-######### copy test ############
-
-y = SharedArray(Float64, 1000)
-ylocal = rand(1000)
-merror = SharedArray(Int, 8)
-
-mutex  = BayesianDataFusion.make_mutex(10)
-ranges = [1+(i-1)*100 : i*100 for i in 1:10]
-
-addshared!(y, ylocal, mutex, ranges, [2,3], merror, 1:1000)
-
-@test_approx_eq y[ranges[1]] zeros(100)
-@test_approx_eq y[ranges[2]] ylocal[ranges[2]]
-@test_approx_eq y[ranges[3]] ylocal[ranges[3]]
-@test_approx_eq y[ranges[4]] zeros(100)
-
-@test merror[1] == 0
-@test all(mutex .== 0) == true
-
-########## mutex test ###########
-ask_for_lock!(mutex, 1, 7)
-@test mutex[1] == 7
-release_lock!(mutex, 1, 7)
-@test mutex[1] == 0
-
-ask_for_lock!(mutex, 2, 7)
-@test mutex[9] == 7
-@test ask_for_lock!(mutex, 2, 8) == false
-@test mutex[9] == 7
-release_lock!(mutex, 2, 7)
 
 
 ######### test hilbert sorting #######
@@ -41,11 +11,27 @@ cols = [1,1,1,1, 2,2,2,2, 3,3,3,3, 4,4,4,4]
 r2, c2 = sort_hilbert(rows, cols)
 
 
-########## parallel mult test ###########
+########## parallel setup ###########
 if nprocs() < 3
   addprocs(2)
 end
 @everywhere using BayesianDataFusion
+
+######### lock test ############
+z = SharedArray(Uint32, 16)
+@test BayesianDataFusion.sem_init(z) == 0
+@test z[1] == 1
+@test fetch(@spawnat 2 z[1]) == 1
+
+@test fetch(@spawnat 2 BayesianDataFusion.sem_trywait(z)) == 0
+@test z[1] == 0
+@test fetch(@spawnat 3 BayesianDataFusion.sem_trywait(z)) == -1
+@test z[1] == 0
+
+@test fetch(@spawnat 2 BayesianDataFusion.sem_post(z)) == 0
+@test z[1] == 1 
+
+######### parallel mult test #########
 rows = Int32[ 1:200; 151:350 ]
 cols = Int32[ 151:350; 1:2:399 ]
 
