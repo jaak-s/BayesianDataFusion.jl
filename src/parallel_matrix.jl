@@ -173,22 +173,44 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
   ## done
 end
 
+function prod_copy!{Tx}(y::SharedArray{Tx,1}, v::Tx, x::SharedArray{Tx,1})
+  length(y) == length(x) || throw(DimensionMismatch("length(y)=$(length(y)) must equal length(x)=$(length(x))"))
+  @inbounds @simd for i = 1:length(y)
+    y[i] = v * x[i]
+  end
+  return nothing
+end
+
 ## computes A'A*x + lambda*x
 function AtA_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}, lambda::Float64)
   A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
   A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(y)=$(length(y))"))
-  y[1:end] = zero(Tx)
+  tmp = A.tmp
+  tmp[1:end] = zero(Tx)
+  ## doing tmp = A * x
   @sync begin
     for p in 1:length(A.pids)
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          remotecall_wait(pid, partmul_ref, y, A.sbms[p], A.logic[p], x)
+          remotecall_wait(pid, partmul_ref, tmp, A.sbms[p], A.logic[p], x)
+        end
+      end
+    end
+    prod_copy!(y, lambda, x)
+  end
+  ## doing y += A' * tmp
+  @sync begin
+    for p in 1:length(A.pids)
+      pid = A.pids[p]
+      if pid != myid() || np == 1
+        @async begin
+          remotecall_wait(pid, partmul_t_ref, y, A.sbms[p], A.logic[p], tmp)
         end
       end
     end
   end
-  ## TODO
+  return nothing
 end
 
 function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}, ntimes::Int)
@@ -247,6 +269,12 @@ function partmul_ref{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::Remote
   partmul(y, A, logic, x)
 end
 
+function partmul_t_ref{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::RemoteRef, x::SharedArray{Tx,1})
+  A     = fetch(Aref)::SparseBinMatrix
+  logic = fetch(logicref)::ParallelLogic
+  partmul_t(y, A, logic, x)
+end
+
 ## assumes sizes are correct
 function partmul{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLogic, x::SharedArray{Tx,1})
   ylocal = logic.localm
@@ -261,6 +289,23 @@ function partmul{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLo
   end
   ## adding the result to shared array
   addshared!(y, ylocal, logic.sems, logic.mblocks, logic.mblock_order, A.mrange)
+  return nothing
+end
+
+## assumes sizes are correct
+function partmul_t{Tx}(y::SharedArray{Tx,1}, A::SparseBinMatrix, logic::ParallelLogic, x::SharedArray{Tx,1})
+  ylocal = logic.localn
+  xlocal = logic.localm
+  rangefill!(ylocal, zero(Tx), A.nrange)
+  copy!(xlocal, x, A.mrange)
+  ## standard y = A' * x
+  rows = A.cols
+  cols = A.rows
+  @inbounds for i = 1:length(rows)
+      ylocal[rows[i]] += xlocal[cols[i]]
+  end
+  ## adding the result to shared array
+  addshared!(y, ylocal, logic.sems, logic.nblocks, logic.nblock_order, A.nrange)
   return nothing
 end
 
