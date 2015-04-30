@@ -53,6 +53,13 @@ B = sparse(rows, cols, 1.0)
 ctimes = BayesianDataFusion.A_mul_B!_time(y, A, x, 3)
 @test size(ctimes) == (2, 3)
 
+## testing AtA_prod
+xn = SharedArray(Float64, size(A, 2))
+AtA_mul_B!(xn, A, x, 0.1)
+xn_true = B' * B * x + 0.1 * x
+
+@test_approx_eq xn xn_true
+
 
 ######## make balanced parallel matrix ########
 

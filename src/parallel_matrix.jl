@@ -2,8 +2,8 @@
 
 export SparseBinMatrix, ParallelLogic, ParallelSBM, balanced_parallelsbm
 export SparseBinMatrixCSR
-export addshared!, ask_for_lock!, release_lock!
 export sort_hilbert
+export AtA_mul_B!
 
 type SparseBinMatrix
   m::Int64
