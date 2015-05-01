@@ -57,16 +57,29 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
   ranges  = make_lengths(length(rows), weights)
   mblocks = make_blocks(m, convert(Int32, numblocks) )
   nblocks = make_blocks(n, convert(Int32, numblocks) )
+  mblock_grid = zeros(Int, numblocks, length(pids))
+  nblock_grid = zeros(Int, numblocks, length(pids))
   for i in 1:length(pids)
     sbm = SparseBinMatrix(m, n, rows[ranges[i]], cols[ranges[i]])
     sbm_ref = @spawnat pids[i] fetch(sbm)
     push!(ps.sbms, sbm_ref)
-    mb = find([! isempty(intersect(sbm.mrange, i)) for i in mblocks])
-    nb = find([! isempty(intersect(sbm.nrange, i)) for i in nblocks])
+    mblock_grid[:,i] = [! isempty(intersect(sbm.mrange, i)) for i in mblocks]
+    nblock_grid[:,i] = [! isempty(intersect(sbm.nrange, i)) for i in nblocks]
+  end
+  mblock_counts = vec(sum(mblock_grid, 2))
+  nblock_counts = vec(sum(nblock_grid, 2))
+  for i in 1:length(pids)
+    mb = block_order(mblock_counts, find(mblock_grid[:,i]))
+    nb = block_order(nblock_counts, find(nblock_grid[:,i]))
     pl_ref = @spawnat pids[i] ParallelLogic(mblocks, nblocks, mb, nb, zeros(m), zeros(n), ps.tmp, sems )
     push!(ps.logic, pl_ref)
   end
   return ps
+end
+
+function block_order(counts, blocks)
+  bcounts = counts[blocks]
+  return blocks[sortperm(bcounts, rev=true)]
 end
 
 sem_init(x::SharedArray)    = ccall(:sem_init, Cint, (Ptr{Void}, Cint, Cuint), x, 1, one(Uint32))
@@ -85,7 +98,6 @@ function balanced_parallelsbm(rows::Vector{Int32}, cols::Vector{Int32}, pids::Ve
   for i = 1:niter
     psbm   = ParallelSBM(rows, cols, pids, numblocks=numblocks, weights=weights)
     times  = A_mul_B!_time(y, psbm, x, ntotal)
-    #ctimes = vec(median(times, 2))
     ctimes = vec(mean(times[:,end-keeplast:end], 2))
     meantime  = gmean(ctimes)
     weights .*= (meantime ./ ctimes) .^ (1/(1+0.2*i))
@@ -329,7 +341,7 @@ function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, sems, rang
       add!(y, x, intersect(ranges[blocks[j]], yrange) )
       sem_post( sems[block] )
       blocks[j] = 0
-      #break
+      break
     end
   end
   return nothing

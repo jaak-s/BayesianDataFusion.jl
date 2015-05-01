@@ -11,6 +11,12 @@ cols = [1,1,1,1, 2,2,2,2, 3,3,3,3, 4,4,4,4]
 r2, c2 = sort_hilbert(rows, cols)
 
 
+######### test block order ########
+@test BayesianDataFusion.block_order( [1, 2, 5, 4, 3, 1], 2:3 ) == [3, 2]
+@test BayesianDataFusion.block_order( [1, 2, 5, 4, 3, 1], 2:4 ) == [3, 4, 2]
+@test BayesianDataFusion.block_order( [1, 2, 5, 4, 3, 1], 2:5 ) == [3, 4, 5, 2]
+@test BayesianDataFusion.block_order( [1, 2, 5, 4, 3, 1], 2:6 ) == [3, 4, 5, 2, 6]
+
 ########## parallel setup ###########
 if nprocs() < 3
   addprocs(2)
