@@ -38,7 +38,7 @@ function macau(data::RelationData;
   latent_multi_threading = false
   local latent_data_refs
 
-  if length(latent_pids) > 1
+  if length(latent_pids) >= 1
     ## initializing multi-threaded latent sampling:
     if length(data.relations) == 1 &&
        length(data.entities)  == 2 &&
