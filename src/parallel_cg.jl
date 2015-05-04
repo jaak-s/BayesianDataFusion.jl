@@ -1,29 +1,55 @@
-######## CG Setup ########
+export CG
 
-type ParallelReg{TF}
+######## CG ########
+
+## CG is stored at cg thread
+## the system has following threads:
+## 1) main thread (macau control)
+## 2) cg running thread
+## 3) matrix multiply threads (pids, stored at F)
+type CG{FT}
   n::Int
-  F::TF
+  F::FT
   lambda::Float64
+  ## vectors used by parallel_cg code
+  sh1::SharedVector{Float64}
+  sh2::SharedVector{Float64}
 end
 
-ParallelReg(F, lambda) = ParallelReg(size(F,2), F, lambda)
-
-function A_mul_B!{TF}(y::AbstractVector{Float64}, AA::ParallelReg{TF}, x::AbstractVector{Float64})
-  AtA_mul_B!(y, AA.F, x, AA.lambda)
-end
-
-function solve(preg::ParallelReg, rhs::Vector{Float64}, lambda::Float64)
-  preg.lambda = lambda
-  # TODO
-  return parallel_cg(preg, rhs)[1]
-end
+CG(F, lambda, pids::Vector{Int}) = CG(
+  size(F,2),
+  F,
+  lambda, 
+  SharedArray(Float64, size(F,2), pids=pids),
+  SharedArray(Float64, size(F,2), pids=pids)
+)
 
 import Base.size
-size(AA::ParallelReg) = (n, n)
+size(cg::CG) = (cg.n, cg.n)
+size(cg::CG, d::Int) = d <= 2 ? cg.n : 1
+
+import Base.A_mul_B!
+function A_mul_B!{FT}(y::AbstractVector{Float64}, rcg::CG{FT}, x::AbstractVector{Float64})
+  AtA_mul_B!(y, rcg.F, x, rcg.lambda)
+end
+
+## called from main thread
+function solve_remote(cgref::RemoteRef, rhs::Vector{Float64}, lambda::Float64; tol=length(rhs)*eps(), maxiter=length(rhs))
+  remotecall_fetch(cgref.where, solve_ref, cgref, rhs, lambda, tol, maxiter)
+end
+
+function solve_ref(cgref::RemoteRef, rhs::Vector{Float64}, lambda::Float64, tol=length(rhs)*eps(), maxiter=length(rhs))
+  cg = fetch(cgref)::CG
+  solve(cg, rhs, lambda, tol, maxiter)
+end
+
+function solve(cg::CG, rhs::Vector{Float64}, lambda::Float64, tol, maxiter)
+  cg.lambda = lambda
+  parallel_cg(cg, rhs, tol=tol, maxiter=maxiter)
+end
 
 
 ######### cg code ##########
-
 function normsq{T}(x::Vector{T})
   s = zero(T)
   @inbounds @simd for i=1:length(x)
@@ -31,6 +57,8 @@ function normsq{T}(x::Vector{T})
   end
   s
 end
+
+norm2{T}(x::Vector{T}) = sqrt(normsq(x))
 
 function prod_add!(p, mult, r)
   @inbounds @simd for i=1:length(p)
@@ -51,17 +79,24 @@ function sub_prod!(x, mult, v)
 end
 
 ## K.A -> A
-function parallel_cg(x, A, b;
-         tol::Real=size(A,2)*eps(), maxiter::Integer=size(A,2))
+function parallel_cg(A::CG, b::Vector{Float64};
+         tol::Real=size(A,2)*eps(), maxiter::Int=size(A,2))
     tol = tol * norm(b)
-    r = b - A * x
-    p = copy(r)
+    ## x is set initially to 0
+    x = zeros(Float64, length(b))
+    #r = b - A * x
+    r = copy(b)
+    ## p and z are parallelized
+    p = A.sh1
+    z = A.sh2
+    copy!(p, r)
     bkden = zero(eltype(x))
-    err   = norm(r)
 
     for iter = 1:maxiter
+        bknum = normsq(r)::Float64
+        err   = sqrt(bknum)
+
         err < tol && return x, err, iter
-        bknum = normsq(r)
 
         if iter > 1
             bk = bknum / bkden
@@ -69,16 +104,13 @@ function parallel_cg(x, A, b;
         end
         bkden = bknum
 
-        z = A * p
+        ## z = A * p
+        A_mul_B!(z, A, p)
 
         ak = bknum / dot(z, p)
 
         add_prod!(x, ak, p)
         sub_prod!(r, ak, z)
-        
-        err = norm(r)
     end
-    x, err, maxiter
+    x, sqrt(normsq(r)), maxiter
 end
-
-
