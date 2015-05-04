@@ -1,5 +1,3 @@
-export CG
-
 ######## CG ########
 
 ## CG is stored at cg thread
@@ -33,6 +31,13 @@ function A_mul_B!{FT}(y::AbstractVector{Float64}, rcg::CG{FT}, x::AbstractVector
   AtA_mul_B!(y, rcg.F, x, rcg.lambda)
 end
 
+## computes y = (F'F + lambda \eye) x
+function AtA_mul_B!(y::AbstractVector{Float64}, F::AbstractMatrix, x::AbstractVector{Float64}, lambda::Float64)
+  length(y) == length(x) || throw(DimensionMismatch("length(y)=$(length(y)) must equal length(x)=$(length(x))"))
+  y[1:end] = F'*F*x + lambda*x
+  return nothing
+end
+
 ## called from main thread
 function solve_remote(cgref::RemoteRef, rhs::Vector{Float64}, lambda::Float64; tol=length(rhs)*eps(), maxiter=length(rhs))
   remotecall_fetch(cgref.where, solve_ref, cgref, rhs, lambda, tol, maxiter)
@@ -40,10 +45,6 @@ end
 
 function solve_ref(cgref::RemoteRef, rhs::Vector{Float64}, lambda::Float64, tol=length(rhs)*eps(), maxiter=length(rhs))
   cg = fetch(cgref)::CG
-  solve(cg, rhs, lambda, tol, maxiter)
-end
-
-function solve(cg::CG, rhs::Vector{Float64}, lambda::Float64, tol, maxiter)
   cg.lambda = lambda
   parallel_cg(cg, rhs, tol=tol, maxiter=maxiter)
 end
@@ -79,17 +80,17 @@ function sub_prod!(x, mult, v)
 end
 
 ## K.A -> A
-function parallel_cg(A::CG, b::Vector{Float64};
+function parallel_cg(A::CG, b::AbstractVector{Float64};
          tol::Real=size(A,2)*eps(), maxiter::Int=size(A,2))
     tol = tol * norm(b)
     ## x is set initially to 0
     x = zeros(Float64, length(b))
     #r = b - A * x
-    r = copy(b)
+    r = zeros(length(x)) + b
     ## p and z are parallelized
     p = A.sh1
     z = A.sh2
-    copy!(p, r)
+    Base.copy!(p, r)
     bkden = zero(eltype(x))
 
     for iter = 1:maxiter
