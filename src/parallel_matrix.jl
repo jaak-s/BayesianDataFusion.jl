@@ -44,14 +44,24 @@ type ParallelSBM
   sems::Vector{SharedArray{Uint32,1}} ## semaphores
 end
 
-function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}=Int[]; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
-  length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
-
+function make_sems(numblocks::Int, pids::Vector{Int})
   sems = SharedArray{Uint32,1}[SharedArray(Uint32, 16, pids=pids) for i=1:numblocks]
   for sem in sems
     sem_init(sem)
   end
+  return sems
+end
+
+function block_order(counts, blocks)
+  bcounts = counts[blocks]
+  return blocks[sortperm(bcounts, rev=true)]
+end
+
+function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}=Int[]; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
+  length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
+
   shtmp = SharedArray(Float64, convert(Int, m), pids=pids)
+  sems  = make_sems(numblocks, pids)
   ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], shtmp, sems)
   ranges  = make_lengths(length(rows), weights)
   mblocks = make_blocks(m, convert(Int32, numblocks) )
@@ -70,16 +80,31 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
   for i in 1:length(pids)
     mb = block_order(mblock_counts, find(mblock_grid[:,i]))
     nb = block_order(nblock_counts, find(nblock_grid[:,i]))
-    pl_ref = @spawnat pids[i] ParallelLogic(mblocks, nblocks, mb, nb, zeros(m), zeros(n), ps.tmp, sems )
+    pl_ref = @spawnat pids[i] ParallelLogic(mblocks, nblocks, mb, nb, zeros(m), zeros(n), ps.tmp, ps.sems )
     push!(ps.logic, pl_ref)
   end
   return ps
 end
 
-function block_order(counts, blocks)
-  bcounts = counts[blocks]
-  return blocks[sortperm(bcounts, rev=true)]
+## copies ParallelSBM to new pids
+function copyto(F::ParallelSBM, pids::Vector{Int})
+  length(pids) == length(F.pids) || throw(DimensionMismatch("length(pids)=$(length(pids)) must equal length(F.pids)=$(length(F.pids))"))
+
+  shtmp = SharedArray(Float64, size(F, 1), pids=pids)
+  sems  = make_sems(length(F.sems), pids)
+  ps    = ParallelSBM(F.m, F.n, pids, RemoteRef[], RemoteRef[], shtmp, sems)
+
+  for i in 1:length(F.sbms)
+    push!(ps.sbms, @spawnat(pids[i], fetch(F.sbms[i])) )
+
+    ## TODO: fix here, should copy non sharedarrays of F.logic
+    l = fetch(@spawnat F.pids[i] F.logic[i])
+    logic_ref = @spawnat pids[i] ParallelLogic(l.mblocks, l.nblocks, l.mblock_order, l.nblock_order, zeros(F.m), zeros(F.n), ps.tmp, ps.sems)
+    push!(ps.logic, logic_ref)
+  end
+  return ps
 end
+
 
 sem_init(x::SharedArray)    = ccall(:sem_init, Cint, (Ptr{Void}, Cint, Cuint), x, 1, one(Uint32))
 sem_wait(x::SharedArray)    = ccall(:sem_wait, Cint, (Ptr{Void},), x)

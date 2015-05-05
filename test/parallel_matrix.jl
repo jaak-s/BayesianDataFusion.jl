@@ -41,7 +41,7 @@ z = SharedArray(Uint32, 16)
 rows = Int32[ 1:200; 151:350 ]
 cols = Int32[ 151:350; 1:2:399 ]
 
-A = ParallelSBM(rows, cols, workers())
+A = ParallelSBM(rows, cols, workers()[1:2])
 
 @test size(A) == (350, 399)
 
@@ -69,12 +69,12 @@ xn_true = B' * B * x + 0.1 * x
 
 ######## make balanced parallel matrix ########
 
-Abal = balanced_parallelsbm(rows, cols, workers())
+Abal = balanced_parallelsbm(rows, cols, workers()[1:2])
 ctimes = BayesianDataFusion.A_mul_B!_time(y, Abal, x, 3)
 
 
 ########     ParallelSBM with CG    ########
-cg   = BayesianDataFusion.CG(A, 0.5, workers())
+cg   = BayesianDataFusion.CG(A, 0.5, workers()[1:2])
 beta = BayesianDataFusion.parallel_cg(cg, x)[1]
 beta_true = (B'*B + eye(size(A,2))*0.5) \ x
 @test_approx_eq beta beta_true

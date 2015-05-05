@@ -22,6 +22,16 @@ CG(F, lambda, pids::Vector{Int}) = CG(
   SharedArray(Float64, size(F,2), pids=pids)
 )
 
+## sets F up on pids and creates CG object
+## should be launched at CG controlling process
+function setup_cg(F, lambda, pids)
+  Floc = copyto(F, pids)
+  return CG{typeof(Floc)}(Floc, lambda, pids)
+end
+
+## basic copyto function, sets F up on cg pid
+copyto(F::Any, pids::Vector{Int}) = F
+
 import Base.size
 size(cg::CG) = (cg.n, cg.n)
 size(cg::CG, d::Int) = d <= 2 ? cg.n : 1
