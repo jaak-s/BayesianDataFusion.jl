@@ -71,3 +71,14 @@ xn_true = B' * B * x + 0.1 * x
 
 Abal = balanced_parallelsbm(rows, cols, workers())
 ctimes = BayesianDataFusion.A_mul_B!_time(y, Abal, x, 3)
+
+
+######## testing nonshared #########
+logic_ns = fetch(@spawnat A.logic[1].where BayesianDataFusion.nonshared(fetch(A.logic[1])) )
+@test ! isdefined(logic_ns, :tmp)
+@test ! isdefined(logic_ns, :sems)
+
+A_ns = BayesianDataFusion.nonshared(A)
+@test size(A) == size(A_ns)
+@test ! isdefined(A_ns, :tmp)
+@test ! isdefined(A_ns, :sems)

@@ -31,7 +31,13 @@ type ParallelLogic
   ## semaphores
   tmp::SharedVector{Float64}
   sems::Vector{SharedArray{Uint32,1}}
+
+  ## constructor for non-shared elements
+  ParallelLogic(mblocks, nblocks, mblock_order, nblock_order, localm, localn) = new(mblocks, nblocks, mblock_order, nblock_order, localm, localn)
+  ParallelLogic(mblocks, nblocks, mblock_order, nblock_order, localm, localn, tmp, sems) = new(mblocks, nblocks, mblock_order, nblock_order, localm, localn, tmp, sems)
 end
+
+nonshared(A::ParallelLogic) = ParallelLogic(A.mblocks, A.nblocks, A.mblock_order, A.nblock_order, A.localm, A.localn)
 
 type ParallelSBM
   m::Int64
@@ -42,7 +48,13 @@ type ParallelSBM
 
   tmp::SharedVector{Float64}  ## for storing middle vector in A'A 
   sems::Vector{SharedArray{Uint32,1}} ## semaphores
+
+  ## constructors
+  ParallelSBM(m, n, pids, sbms, logic) = new(m, n, pids, sbms, logic)
+  ParallelSBM(m, n, pids, sbms, logic, tmp, sems) = new(m, n, pids, sbms, logic, tmp, sems)
 end
+
+nonshared(A::ParallelSBM) = ParallelSBM(A.m, A.n, A.pids, A.sbms, A.logic)
 
 function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}=Int[]; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
   length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
