@@ -46,15 +46,16 @@ type ParallelSBM
   sbms::Vector{RemoteRef}  ## SparseBinMatrix
   logic::Vector{RemoteRef} ## ParallelLogic
 
+  numblocks::Int                ## number of blocks, each has semaphore
   tmp::SharedVector{Float64}  ## for storing middle vector in A'A 
   sems::Vector{SharedArray{Uint32,1}} ## semaphores
 
   ## constructors
-  ParallelSBM(m, n, pids, sbms, logic) = new(m, n, pids, sbms, logic)
-  ParallelSBM(m, n, pids, sbms, logic, tmp, sems) = new(m, n, pids, sbms, logic, tmp, sems)
+  ParallelSBM(m, n, pids, sbms, logic, numblocks) = new(m, n, pids, sbms, logic, numblocks)
+  ParallelSBM(m, n, pids, sbms, logic, numblocks, tmp, sems) = new(m, n, pids, sbms, logic, numblocks, tmp, sems)
 end
 
-nonshared(A::ParallelSBM) = ParallelSBM(A.m, A.n, A.pids, A.sbms, A.logic)
+nonshared(A::ParallelSBM) = ParallelSBM(A.m, A.n, A.pids, A.sbms, A.logic, A.numblocks)
 
 function make_sems(numblocks::Int, pids::Vector{Int})
   sems = SharedArray{Uint32,1}[SharedArray(Uint32, 16, pids=pids) for i=1:numblocks]
@@ -74,7 +75,7 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
 
   shtmp = SharedArray(Float64, convert(Int, m), pids=pids)
   sems  = make_sems(numblocks, pids)
-  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], shtmp, sems)
+  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], numblocks, shtmp, sems)
   ranges  = make_lengths(length(rows), weights)
   mblocks = make_blocks(m, convert(Int32, numblocks) )
   nblocks = make_blocks(n, convert(Int32, numblocks) )
@@ -102,15 +103,15 @@ end
 function copyto(F::ParallelSBM, pids::Vector{Int})
   length(pids) == length(F.pids) || throw(DimensionMismatch("length(pids)=$(length(pids)) must equal length(F.pids)=$(length(F.pids))"))
 
+  ## TODO: refs are broken
   shtmp = SharedArray(Float64, size(F, 1), pids=pids)
-  sems  = make_sems(length(F.sems), pids)
-  ps    = ParallelSBM(F.m, F.n, pids, RemoteRef[], RemoteRef[], shtmp, sems)
+  sems  = make_sems(F.numblocks, pids)
+  ps    = ParallelSBM(F.m, F.n, pids, RemoteRef[], RemoteRef[], F.numblocks, shtmp, sems)
 
   for i in 1:length(F.sbms)
     push!(ps.sbms, @spawnat(pids[i], fetch(F.sbms[i])) )
 
-    ## TODO: fix here, should copy non sharedarrays of F.logic
-    l = fetch(@spawnat F.pids[i] F.logic[i])
+    l = fetch(@spawnat F.pids[i] nonshared(fetch(F.logic[i])))
     logic_ref = @spawnat pids[i] ParallelLogic(l.mblocks, l.nblocks, l.mblock_order, l.nblock_order, zeros(F.m), zeros(F.n), ps.tmp, ps.sems)
     push!(ps.logic, logic_ref)
   end

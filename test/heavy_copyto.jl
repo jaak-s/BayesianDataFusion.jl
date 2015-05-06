@@ -13,7 +13,7 @@ A = ParallelSBM(rows, cols, workers()[1:2])
 ########        copyto test         ########
 addprocs(2)
 @everywhere using BayesianDataFusion
-A2 = BayesianDataFusion.copyto(A, workers()[end-1:end])
+A2 = BayesianDataFusion.copyto(BayesianDataFusion.nonshared(A), workers()[end-1:end])
 @test A.m == A2.m
 @test A.n == A2.n
 @test length(A.tmp)   == length(A2.tmp)
