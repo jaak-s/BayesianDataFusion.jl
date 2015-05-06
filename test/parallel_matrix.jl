@@ -68,7 +68,6 @@ xn_true = B' * B * x + 0.1 * x
 
 
 ######## make balanced parallel matrix ########
-
 Abal = balanced_parallelsbm(rows, cols, workers()[1:2])
 ctimes = BayesianDataFusion.A_mul_B!_time(y, Abal, x, 3)
 
@@ -78,3 +77,14 @@ cg   = BayesianDataFusion.CG(A, 0.5, workers()[1:2])
 beta = BayesianDataFusion.parallel_cg(cg, x)[1]
 beta_true = (B'*B + eye(size(A,2))*0.5) \ x
 @test_approx_eq beta beta_true
+
+
+######## testing nonshared #########
+logic_ns = fetch(@spawnat A.logic[1].where BayesianDataFusion.nonshared(fetch(A.logic[1])) )
+@test ! isdefined(logic_ns, :tmp)
+@test ! isdefined(logic_ns, :sems)
+
+A_ns = BayesianDataFusion.nonshared(A)
+@test size(A) == size(A_ns)
+@test ! isdefined(A_ns, :tmp)
+@test ! isdefined(A_ns, :sems)
