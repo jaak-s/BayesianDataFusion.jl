@@ -223,15 +223,20 @@ function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{I
   chol(covar)' * randn(length(mu)) + mu
 end
 
-function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool)
+function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool, tol=NaN )
   N, D = size(sample_u_c)
   numF = size(entity.F, 2)
+  if isnan(tol)  ## default tolerance
+    tol = eps() * numF
+  end
   
   mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
   Ft_y = At_mul_B(entity.F, sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   
   if use_ff
     beta = solve_full(entity.FF, Ft_y, lambda_beta)
+  elseif ! isempty(entity.cgrefs)
+    beta = solve_cg2(entity.cgrefs, Ft_y, lambda_beta, tol)
   else
     beta = solve_cg(entity.F, Ft_y, lambda_beta)
   end
@@ -244,6 +249,27 @@ function solve_cg(F, rhs, lambda_beta)
   beta = zeros(size(rhs,1), D)
   for d = 1:D
     beta[:,d] = beta_list[d]
+  end
+  return beta
+end
+
+function solve_cg2(cg_refs::Vector{RemoteRef}, rhs::Matrix{Float64}, lambda_beta::Float64, tol=1e-6, maxiter=size(rhs,1))
+  beta = zeros(size(rhs,1), size(rhs,2))
+  D    = size(rhs,2)
+  i    = 1
+  # function to produce the next work item from the queue.
+  # in this case it's just an index.
+  nextidx() = (idx=i; i+=1; idx)
+  @sync begin
+    for ref in cg_refs
+      @async begin
+        while true
+          idx = nextidx()
+          idx > D && break
+          beta[:,idx] = remotecall_fetch(ref.where, solve_ref, ref, rhs[:,idx], lambda_beta, tol, maxiter)
+        end
+      end
+    end
   end
   return beta
 end

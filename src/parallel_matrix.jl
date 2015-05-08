@@ -191,8 +191,11 @@ size(X::ParallelSBM) = (X.m, X.n)
 size(X::ParallelSBM, d::Int) = d==1 ? X.m : X.n
 
 import Base.A_mul_B!
+import Base.*
 
 ## multiplication: y = A * x
+*{Tx}(A::SparseBinMatrix, x::AbstractArray{Tx,1}) = (y = zeros(Tx, A.m); A_mul_B!(y, A, x); y)
+
 function A_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArray{Tx,1})
     A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
     A.m == length(y) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(y))"))
@@ -201,6 +204,18 @@ function A_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArr
     cols = A.cols
     @inbounds for i = 1:length(rows)
         y[rows[i]] += x[cols[i]]
+    end
+    return
+end
+
+function At_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArray{Tx,1})
+    A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(y))"))
+    A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(x))"))
+    fill!(y, zero(Tx) )
+    rows = A.rows
+    cols = A.cols
+    @inbounds for i = 1:length(rows)
+        y[cols[i]] += x[rows[i]]
     end
     return
 end

@@ -42,9 +42,12 @@ function A_mul_B!{FT}(y::AbstractVector{Float64}, rcg::CG{FT}, x::AbstractVector
 end
 
 ## computes y = (F'F + lambda \eye) x
-function AtA_mul_B!(y::AbstractVector{Float64}, F::AbstractMatrix, x::AbstractVector{Float64}, lambda::Float64)
+function AtA_mul_B!(y::AbstractVector{Float64}, F, x::AbstractVector{Float64}, lambda::Float64)
   length(y) == length(x) || throw(DimensionMismatch("length(y)=$(length(y)) must equal length(x)=$(length(x))"))
-  y[1:end] = F'*F*x + lambda*x
+  At_mul_B!(y, F, F*x)
+  for i = 1:length(y)
+    y[i] += lambda*x[i]
+  end
   return nothing
 end
 
@@ -56,9 +59,22 @@ end
 function solve_ref(cgref::RemoteRef, rhs::Vector{Float64}, lambda::Float64, tol=length(rhs)*eps(), maxiter=length(rhs))
   cg = fetch(cgref)::CG
   cg.lambda = lambda
-  parallel_cg(cg, rhs, tol=tol, maxiter=maxiter)
+  parallel_cg(cg, rhs, tol=tol, maxiter=maxiter)[1]
 end
 
+## for standard objects nonshared does not do anything
+nonshared(A) = A
+
+function make_remote_cg(A, cg_pid::Int, pids::Vector{Int})
+  Ans  = nonshared(A)
+  return @spawnat cg_pid make_cg(Ans, pids)
+end
+
+## called by make_remote_cg
+function make_cg(Ans, pids::Vector{Int})
+  Aloc = copyto(Ans, pids)
+  return CG(Aloc, 0.5, pids)
+end
 
 ######### cg code ##########
 function normsq{T}(x::Vector{T})

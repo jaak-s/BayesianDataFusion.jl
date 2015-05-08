@@ -202,11 +202,16 @@ function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   return RelationData(idf; kw...)
 end
 
-function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500)
+function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500, cg_pids=Int[myid()])
   for en in data.entities
     initModel!(en, num_latent, lambda_beta = lambda_beta)
-    if hasFeatures(en) && size(en.F,2) <= compute_ff_size
-      en.FF = full(At_mul_B(en.F, en.F))
+    if hasFeatures(en)
+      if size(en.F,2) <= compute_ff_size
+        en.FF = full(At_mul_B(en.F, en.F))
+      else
+        ## setup CG on julia threads
+        init_cg(en, num_latent, cg_pids)
+      end
     end
   end
   for r in data.relations
@@ -216,6 +221,22 @@ function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size
       r.temp.linear_values = r.model.mean_value * ones(numData(r))
       r.temp.FF = full(r.F' * r.F)
     end
+  end
+end
+
+function init_cg(en::Entity, num_latent::Int, pids::Vector{Int})
+  for i = 1:min(length(pids), num_latent)
+    push!(en.cgrefs, make_remote_cg(en.F, pids[i], Int[pids[i]]) )
+  end
+end
+
+function init_cg(en::Entity, num_latent::Int, pids::Vector{Vector{Int}})
+  for p in pids
+    cgpid   = p[1]
+    mulpids = p[2:end]
+    isempty(mulpids) && push!(mulpids, cgpid)
+    cgref = make_remote_cg(en.F, cgpid, mulpids)
+    push!(en.cgrefs, cgref)
   end
 end
 
