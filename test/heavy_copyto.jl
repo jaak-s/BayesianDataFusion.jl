@@ -57,3 +57,13 @@ rd   = RelationData(Y, class_cut = 0.5, feat1 = feat)
 assignToTest!(rd.relations[1], 2)
 
 res = macau(rd, burnin = 2, psamples = 2, verbose = false, compute_ff_size=0, cg_pids=Int[2,3,4], num_latent=5)
+
+
+########  macau with ParallelSBM  ########
+Y     = sprand(20, 10, 0.2)
+rows, cols, vals = findnz(Y)
+A     = ParallelSBM(rows, cols, workers()[1:2])
+rd2   = RelationData(Y, class_cut = 0.5, feat1 = A)
+assignToTest!(rd.relations[1], 2)
+
+res2  = macau(rd2, burnin = 2, psamples = 2, verbose = false, compute_ff_size=0, cg_pids=Vector{Int}[ [2,3], [4,5] ], num_latent=5)

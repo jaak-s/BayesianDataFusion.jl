@@ -70,6 +70,10 @@ function block_order(counts, blocks)
   return blocks[sortperm(bcounts, rev=true)]
 end
 
+function ParallelSBM(rows::Vector{Int}, cols::Vector{Int}, pids::Vector{Int}, weights=ones(length(pids)), m=convert(Int32, maximum(rows)), n=convert(Int32, maximum(cols)), numblocks=length(pids)*2)
+  return ParallelSBM(convert(Vector{Int32}, rows), convert(Vector{Int32}, cols), pids, weights=weights, m=m, n=n, numblocks=numblocks)
+end
+
 function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}=Int[]; weights=ones(length(pids)), m=maximum(rows), n=maximum(cols), numblocks=length(pids)*2 )
   length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
 
@@ -184,11 +188,14 @@ function busywait(x::SharedArray{Int,1}, n::Int, value::Int, ntimes=100)
 end
 
 import Base.size
+import Base.isempty
 size(X::SparseBinMatrix) = (X.m, X.n)
 size(X::SparseBinMatrix, d::Int) = d==1 ? X.m : X.n
+isempty(X::SparseBinMatrix)      = X.m == 0 || X.n == 0
 
 size(X::ParallelSBM) = (X.m, X.n)
 size(X::ParallelSBM, d::Int) = d==1 ? X.m : X.n
+isempty(X::ParallelSBM)      = X.m == 0 || X.n == 0
 
 import Base.A_mul_B!
 import Base.*

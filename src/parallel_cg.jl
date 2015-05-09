@@ -51,6 +51,17 @@ function AtA_mul_B!(y::AbstractVector{Float64}, F, x::AbstractVector{Float64}, l
   return nothing
 end
 
+## computes CG.F*x
+cgA_mul_B(A, x::AbstractVector{Float64}) = (y=zeros(Float64, size(A,1)); cgA_mul_B!(y,A,x); y)
+cgA_mul_B!(y, cgref::RemoteRef, x)       = cgA_mul_B!(y, fetch(cgref), x)
+cgA_mul_B!(y::AbstractVector{Float64}, cg::CG{Any}, x::AbstractVector{Float64}) = A_mul_B!(y, cg.F, x)
+function cgA_mul_B!(y::AbstractVector{Float64}, cg::CG{ParallelSBM}, x::AbstractVector{Float64})
+  ysh = cg.F.tmp
+  copy!(cg.sh1, x)
+  A_mul_B!(ysh, cg.F, cg.sh1)
+  copy!(y, ysh)
+end
+
 ## called from main thread
 function solve_remote(cgref::RemoteRef, rhs::Vector{Float64}, lambda::Float64; tol=length(rhs)*eps(), maxiter=length(rhs))
   remotecall_fetch(cgref.where, solve_ref, cgref, rhs, lambda, tol, maxiter)

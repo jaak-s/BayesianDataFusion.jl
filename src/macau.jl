@@ -97,7 +97,7 @@ function macau(data::RelationData;
       Tinv = mj.WI
 
       if hasFeatures(en)
-        uhat = en.F * mj.beta
+        uhat = F_mul_beta(en)
         U = mj.sample - uhat
         if full_lambda_u
           nu   += size(mj.beta, 1)

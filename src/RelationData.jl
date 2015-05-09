@@ -68,6 +68,15 @@ end
 
 hasFeatures(entity::Entity) = ! isempty(entity.F)
 
+## computes F * beta
+function F_mul_beta(en::Entity{F,Relation})
+  if ! isempty(en.cgrefs)
+    return A_mul_B(en.cgrefs, en.model.beta)
+  else
+    return en.F * en.model.beta
+  end
+end
+
 function toStr(en::Entity)
   if ! isdefined(en, :model)
     return string(en.name[1:min(3,end)], "[]")

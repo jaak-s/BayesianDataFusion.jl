@@ -274,6 +274,10 @@ function solve_cg2(cg_refs::Vector{RemoteRef}, rhs::Matrix{Float64}, lambda_beta
   return beta
 end
 
+function A_mul_B(cg_refs::Vector{RemoteRef}, x::Matrix{Float64})
+  error("Unimplemented")
+end
+
 function solve_full(FF, rhs, lambda_beta)
   FFreg = copy(FF)
   for i = 1:size(FFreg, 2)
