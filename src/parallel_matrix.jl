@@ -47,12 +47,14 @@ type ParallelSBM
   logic::Vector{RemoteRef} ## ParallelLogic
 
   numblocks::Int                ## number of blocks, each has semaphore
-  tmp::SharedVector{Float64}  ## for storing middle vector in A'A 
+  tmp::SharedVector{Float64}    ## for storing middle vector in A'A 
+  sh1::SharedVector{Float64}    ## length(sh1) = A.n
+  sh2::SharedVector{Float64}    ## length(sh2) = A.n
   sems::Vector{SharedArray{Uint32,1}} ## semaphores
 
   ## constructors
   ParallelSBM(m, n, pids, sbms, logic, numblocks) = new(m, n, pids, sbms, logic, numblocks)
-  ParallelSBM(m, n, pids, sbms, logic, numblocks, tmp, sems) = new(m, n, pids, sbms, logic, numblocks, tmp, sems)
+  ParallelSBM(m, n, pids, sbms, logic, numblocks, tmp, sh1, sh2, sems) = new(m, n, pids, sbms, logic, numblocks, tmp, sh1, sh2, sems)
 end
 
 nonshared(A::ParallelSBM) = ParallelSBM(A.m, A.n, A.pids, A.sbms, A.logic, A.numblocks)
@@ -78,8 +80,10 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
   length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
 
   shtmp = SharedArray(Float64, convert(Int, m), pids=pids)
+  sh1   = SharedArray(Float64, convert(Int, n), pids=pids)
+  sh2   = SharedArray(Float64, convert(Int, n), pids=pids)
   sems  = make_sems(numblocks, pids)
-  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], numblocks, shtmp, sems)
+  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], numblocks, shtmp, sh1, sh2, sems)
   ranges  = make_lengths(length(rows), weights)
   mblocks = make_blocks(m, convert(Int32, numblocks) )
   nblocks = make_blocks(n, convert(Int32, numblocks) )
@@ -107,10 +111,11 @@ end
 function copyto(F::ParallelSBM, pids::Vector{Int})
   length(pids) == length(F.pids) || throw(DimensionMismatch("length(pids)=$(length(pids)) must equal length(F.pids)=$(length(F.pids))"))
 
-  ## TODO: refs are broken
   shtmp = SharedArray(Float64, size(F, 1), pids=pids)
+  sh1   = SharedArray(Float64, size(F, 2), pids=pids)
+  sh2   = SharedArray(Float64, size(F, 2), pids=pids)
   sems  = make_sems(F.numblocks, pids)
-  ps    = ParallelSBM(F.m, F.n, pids, RemoteRef[], RemoteRef[], F.numblocks, shtmp, sems)
+  ps    = ParallelSBM(F.m, F.n, pids, RemoteRef[], RemoteRef[], F.numblocks, shtmp, sh1, sh2, sems)
 
   for i in 1:length(F.sbms)
     push!(ps.sbms, @spawnat(pids[i], fetch(F.sbms[i])) )
@@ -198,10 +203,13 @@ size(X::ParallelSBM, d::Int) = d==1 ? X.m : X.n
 isempty(X::ParallelSBM)      = X.m == 0 || X.n == 0
 
 import Base.A_mul_B!
+import Base.At_mul_B!
+import Base.At_mul_B
 import Base.*
 
 ## multiplication: y = A * x
 *{Tx}(A::SparseBinMatrix, x::AbstractArray{Tx,1}) = (y = zeros(Tx, A.m); A_mul_B!(y, A, x); y)
+*{Tx}(A::ParallelSBM,     x::AbstractArray{Tx,1}) = (y = zeros(Tx, A.m); A_mul_B!(y, A, x); y)
 
 function A_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArray{Tx,1})
     A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
@@ -231,6 +239,7 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
   A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
   A.m == length(y) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(y))"))
   y[1:end] = zero(Tx)
+  np = length(A.pids)
   @sync begin
     for p in 1:length(A.pids)
       pid = A.pids[p]
@@ -242,6 +251,43 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
     end
   end
   ## done
+end
+
+function At_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1})
+  A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(x)=$(length(x))"))
+  A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(y)=$(length(y))"))
+  y[1:end] = zero(Tx)
+  np = length(A.pids)
+  @sync begin
+    for p in 1:length(A.pids)
+      pid = A.pids[p]
+      if pid != myid() || np == 1
+        @async begin
+          remotecall_wait(pid, partmul_t_ref, y, A.sbms[p], A.logic[p], x)
+        end
+      end
+    end
+  end
+end
+
+import Base.*
+
+function *{Tx}(A::ParallelSBM, x::AbstractArray{Tx,1})
+  A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
+  A.sh1[1:end] = x
+  A_mul_B!(A.tmp, A, A.sh1)
+  y = zeros(Tx, length(A.tmp))
+  y[1:end] = A.tmp
+  return y
+end
+
+function At_mul_B{Tx}(A::ParallelSBM, x::AbstractArray{Tx,1})
+  A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(x)=$(length(x))"))
+  A.tmp[1:end] = x
+  At_mul_B!(A.sh1, A, A.tmp)
+  y = zeros(Tx, A.n)
+  y[1:end] = A.sh1
+  return y
 end
 
 function prod_copy!{Tx}(y::SharedArray{Tx,1}, v::Tx, x::SharedArray{Tx,1})
@@ -258,6 +304,7 @@ function AtA_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,
   A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(y)=$(length(y))"))
   tmp = A.tmp
   tmp[1:end] = zero(Tx)
+  np = length(A.pids)
   ## doing tmp = A * x
   @sync begin
     for p in 1:length(A.pids)
@@ -294,7 +341,7 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
     @sync begin
       for p in 1:length(A.pids)
         pid = A.pids[p]
-        if pid != myid() || np == 1
+        if pid != myid() || length(A.pids) == 1
           @async begin
             ptime[p, i] += remotecall_fetch(pid, partmul_time, y, A.sbms[p], A.logic[p], x)
           end
@@ -406,8 +453,80 @@ function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, sems, rang
   return nothing
 end
 
-function At_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1})
-  # TODO
+######## parallel operations on Frefs
+function solve_cg2(Frefs::Vector{RemoteRef}, rhs::Matrix{Float64}, lambda::Float64; tol=1e-6, maxiter=size(rhs,1))
+  beta = zeros(size(rhs,1), size(rhs,2))
+  D    = size(rhs,2)
+  i    = 1
+  # function to produce the next work item from the queue.
+  # in this case it's just an index.
+  nextidx() = (idx=i; i+=1; idx)
+  @sync begin
+    for ref in Frefs
+      @async begin
+        while true
+          idx = nextidx()
+          idx > D && break
+          beta[:,idx] = remotecall_fetch(ref.where, cg_AtA_ref, ref, rhs[:,idx], lambda, tol, maxiter)
+        end
+      end
+    end
+  end
+  return beta
+end
+
+function A_mul_B_ref(Fref::RemoteRef, x::AbstractVector{Float64})
+  F = fetch(Fref)
+  return F * x
+end
+
+function At_mul_B_ref(Fref::RemoteRef, x::AbstractVector{Float64})
+  F = fetch(Fref)
+  return At_mul_B(F, x)
+end
+
+## computes y = F * x in parallel (along columns of x)
+function Frefs_mul_B(Frefs::Vector{RemoteRef}, x::Matrix{Float64})
+  m, n = fetch( @spawnat Frefs[1].where size(fetch(Frefs[1])) )
+  n == size(x, 1) || throw(DimensionMismatch("Frefs.n=$(n) must equal length(x)=$(length(x))"))
+  y = zeros(m, size(x,2))
+  D = size(x, 2)
+  i = 1
+  nextidx() = (idx=i; i+=1; idx)
+  @sync begin
+    for ref in Frefs
+      @async begin
+        while true
+          idx = nextidx()
+          idx > D && break
+          y[:,idx] = remotecall_fetch(ref.where, A_mul_B_ref, ref, x[:,idx])
+        end
+      end
+    end
+  end
+  return y
+end
+
+## computes y = F' * x in parallel (along columns of x)
+function Frefs_t_mul_B(Frefs::Vector{RemoteRef}, x::Matrix{Float64})
+  m, n = fetch( @spawnat Frefs[1].where size(fetch(Frefs[1])) )
+  m == size(x, 1) || throw(DimensionMismatch("Frefs.m=$(m) must equal length(x)=$(length(x))"))
+  y = zeros(n, size(x,2))
+  D = size(x, 2)
+  i = 1
+  nextidx() = (idx=i; i+=1; idx)
+  @sync begin
+    for ref in Frefs
+      @async begin
+        while true
+          idx = nextidx()
+          idx > D && break
+          y[:,idx] = remotecall_fetch(ref.where, At_mul_B_ref, ref, x[:,idx])
+        end
+      end
+    end
+  end
+  return y
 end
 
 ######## Hilbert ordering ########

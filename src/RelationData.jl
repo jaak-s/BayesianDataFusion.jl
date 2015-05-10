@@ -25,7 +25,7 @@ end
 type Entity{FT,R}
   F::FT
   FF
-  cgrefs::Vector{RemoteRef}
+  Frefs::Vector{RemoteRef}
   relations::Vector{R}
   count::Int64
   name::String
@@ -67,15 +67,6 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
 end
 
 hasFeatures(entity::Entity) = ! isempty(entity.F)
-
-## computes F * beta
-function F_mul_beta(en::Entity{F,Relation})
-  if ! isempty(en.cgrefs)
-    return A_mul_B(en.cgrefs, en.model.beta)
-  else
-    return en.F * en.model.beta
-  end
-end
 
 function toStr(en::Entity)
   if ! isdefined(en, :model)
@@ -211,6 +202,24 @@ function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   return RelationData(idf; kw...)
 end
 
+## computes F * beta
+function F_mul_beta{F}(en::Entity{F,Relation})
+  if ! isempty(en.Frefs)
+    return Frefs_mul_B(en.Frefs, en.model.beta)
+  else
+    return en.F * en.model.beta
+  end
+end
+
+## computes F' * beta
+function Ft_mul_B{F}(en::Entity{F,Relation}, B::Matrix{Float64})
+  if ! isempty(en.Frefs)
+    return Frefs_t_mul_B(en.Frefs, B)
+  else
+    return At_mul_B(en.F, B)
+  end
+end
+
 function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500, cg_pids=Int[myid()])
   for en in data.entities
     initModel!(en, num_latent, lambda_beta = lambda_beta)
@@ -219,7 +228,7 @@ function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size
         en.FF = full(At_mul_B(en.F, en.F))
       else
         ## setup CG on julia threads
-        init_cg(en, num_latent, cg_pids)
+        init_Frefs!(en, num_latent, cg_pids)
       end
     end
   end
@@ -233,19 +242,21 @@ function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size
   end
 end
 
-function init_cg(en::Entity, num_latent::Int, pids::Vector{Int})
+function init_Frefs!(en::Entity, num_latent::Int, pids::Vector{Int})
+  Fns = nonshared(en.F)
   for i = 1:min(length(pids), num_latent)
-    push!(en.cgrefs, make_remote_cg(en.F, pids[i], Int[pids[i]]) )
+    pid = pids[i]
+    push!(en.Frefs, @spawnat pid copyto(Fns, Int[pid]))
   end
 end
 
-function init_cg(en::Entity, num_latent::Int, pids::Vector{Vector{Int}})
-  for p in pids
-    cgpid   = p[1]
-    mulpids = p[2:end]
-    isempty(mulpids) && push!(mulpids, cgpid)
-    cgref = make_remote_cg(en.F, cgpid, mulpids)
-    push!(en.cgrefs, cgref)
+function init_Frefs!(en::Entity, num_latent::Int, pids::Vector{Vector{Int}})
+  Fns = nonshared(en.F)
+  for i = 1:min(length(pids), num_latent)
+    pid   = pids[i][1]
+    mulpids = pids[i][2:end]
+    isempty(mulpids) && push!(mulpids, pid)
+    push!(en.Frefs, @spawnat pid copyto(Fns, mulpids))
   end
 end
 

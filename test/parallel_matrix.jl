@@ -52,12 +52,21 @@ x[1:end] = rand( length(x) )
 
 A_mul_B!(y, A, x)
 B = sparse(rows, cols, 1.0)
+y_e = B*x
+ydirect = A * x
 
-@test_approx_eq y B*x
+@test_approx_eq y       y_e
+@test_approx_eq ydirect y_e
 
 ## measuring time
 ctimes = BayesianDataFusion.A_mul_B!_time(y, A, x, 3)
 @test size(ctimes) == (2, 3)
+
+## At_mul_B test
+x9  = rand(A.m)
+y9  = At_mul_B(A, x9)
+y9e = At_mul_B(B, x9)
+@test_approx_eq y9 y9e
 
 ## testing AtA_mul_B!
 xn = SharedArray(Float64, size(A, 2))
@@ -83,8 +92,9 @@ ctimes = BayesianDataFusion.A_mul_B!_time(y, Abal, x, 3)
 
 
 ########     ParallelSBM with CG    ########
-cg   = BayesianDataFusion.CG(A, 0.5, workers()[1:2])
-beta = BayesianDataFusion.parallel_cg(cg, x)[1]
+#cg   = BayesianDataFusion.CG(A, 0.5, workers()[1:2])
+#beta = BayesianDataFusion.parallel_cg(cg, x)[1]
+beta = BayesianDataFusion.cg_AtA(A, x, 0.5)
 beta_true = (B'*B + eye(size(A,2))*0.5) \ x
 @test_approx_eq beta beta_true
 
