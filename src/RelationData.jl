@@ -244,6 +244,7 @@ end
 
 function init_Frefs!(en::Entity, num_latent::Int, pids::Vector{Int})
   Fns = nonshared(en.F)
+  empty!(en.Frefs)
   for i = 1:min(length(pids), num_latent)
     pid = pids[i]
     push!(en.Frefs, @spawnat pid copyto(Fns, Int[pid]))
@@ -252,10 +253,21 @@ end
 
 function init_Frefs!(en::Entity, num_latent::Int, pids::Vector{Vector{Int}})
   Fns = nonshared(en.F)
+  empty!(en.Frefs)
   for i = 1:min(length(pids), num_latent)
     pid   = pids[i][1]
     mulpids = pids[i][2:end]
     isempty(mulpids) && push!(mulpids, pid)
+    push!(en.Frefs, @spawnat pid copyto(Fns, mulpids))
+  end
+end
+
+function init_Frefs!(en::Entity, num_latent::Int, pids::Dict{Int, Vector{Int}})
+  Fns = nonshared(en.F)
+  empty!(en.Frefs)
+  for e in pids
+    pid     = e[1]
+    mulpids = e[2]
     push!(en.Frefs, @spawnat pid copyto(Fns, mulpids))
   end
 end

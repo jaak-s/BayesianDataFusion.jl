@@ -83,3 +83,8 @@ rd2   = RelationData(Y, class_cut = 0.5, feat1 = A)
 assignToTest!(rd.relations[1], 2)
 
 res2  = macau(rd2, burnin = 2, psamples = 2, verbose = false, compute_ff_size=0, cg_pids=Vector{Int}[ [2, 2,3], [4, 4,5] ], num_latent=5)
+
+## using Dictionary for cg_pids
+rd2   = RelationData(Y, class_cut = 0.5, feat1 = A)
+assignToTest!(rd.relations[1], 2)
+res3  = macau(rd2, burnin = 2, psamples = 2, verbose = false, compute_ff_size=0, cg_pids=Dict( 2 => [2,3], 4 => [4,5]) )
