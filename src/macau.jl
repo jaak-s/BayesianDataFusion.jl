@@ -1,5 +1,4 @@
 include("sampling.jl")
-include("purecg.jl")
 
 export macau
 

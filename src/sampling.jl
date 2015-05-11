@@ -1,7 +1,7 @@
 using Iterators
 
 export pred, pred_all
-export solve_cg, solve_full
+export solve_full
 
 function pred(r::Relation, probe_vec::DataFrame, F)
   if ! hasFeatures(r)
@@ -239,19 +239,10 @@ function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool, to
   elseif ! isempty(entity.Frefs)
     beta = solve_cg2(entity.Frefs, Ft_y, lambda_beta, tol=tol)
   else
-    beta = solve_cg(entity.F, Ft_y, lambda_beta)
+    error("No CG solver if entity has no Frefs or FF.")
+    #beta = solve_cg(entity.F, Ft_y, lambda_beta)
   end
   return beta, Ft_y
-end
-
-function solve_cg(F, rhs, lambda_beta)
-  D = size(rhs, 2)
-  beta_list = pmap( d -> ridge_solve(F, rhs[:,d], lambda_beta), 1:D )
-  beta = zeros(size(rhs,1), D)
-  for d = 1:D
-    beta[:,d] = beta_list[d]
-  end
-  return beta
 end
 
 function solve_full(FF, rhs, lambda_beta)
