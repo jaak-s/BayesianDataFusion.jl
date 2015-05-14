@@ -41,7 +41,7 @@ z = SharedArray(Uint32, 16)
 rows = Int32[ 1:200; 151:350 ]
 cols = Int32[ 151:350; 1:2:399 ]
 
-A = ParallelSBM(rows, cols, workers())
+A = ParallelSBM(rows, cols, workers()[1:2])
 
 @test size(A) == (350, 399)
 
@@ -52,22 +52,59 @@ x[1:end] = rand( length(x) )
 
 A_mul_B!(y, A, x)
 B = sparse(rows, cols, 1.0)
+y_e = B*x
+ydirect = A * x
 
-@test_approx_eq y B*x
+@test_approx_eq y       y_e
+@test_approx_eq ydirect y_e
 
 ## measuring time
 ctimes = BayesianDataFusion.A_mul_B!_time(y, A, x, 3)
 @test size(ctimes) == (2, 3)
 
-## testing AtA_prod
+## At_mul_B test
+x9  = rand(A.m)
+y9  = At_mul_B(A, x9)
+y9e = At_mul_B(B, x9)
+@test_approx_eq y9 y9e
+
+## testing AtA_mul_B!
 xn = SharedArray(Float64, size(A, 2))
 AtA_mul_B!(xn, A, x, 0.1)
 xn_true = B' * B * x + 0.1 * x
-
 @test_approx_eq xn xn_true
+
+## testing AtA_mul_B! for dense matrix
+Bxn = zeros(Float64, size(A,2))
+AtA_mul_B!(Bxn, B, x, 0.1)
+@test_approx_eq Bxn xn_true
+
+## AtA_mul_B! for SparseBinMatrix
+sbm = SparseBinMatrix(rows, cols)
+sxn = zeros(Float64, size(sbm,2))
+AtA_mul_B!(sxn, sbm, x, 0.1)
+@test_approx_eq sxn xn_true
 
 
 ######## make balanced parallel matrix ########
-
-Abal = balanced_parallelsbm(rows, cols, workers())
+Abal = balanced_parallelsbm(rows, cols, workers()[1:2])
 ctimes = BayesianDataFusion.A_mul_B!_time(y, Abal, x, 3)
+
+
+########     ParallelSBM with CG    ########
+#cg   = BayesianDataFusion.CG(A, 0.5, workers()[1:2])
+#beta = BayesianDataFusion.parallel_cg(cg, x)[1]
+beta = BayesianDataFusion.cg_AtA(A, x, 0.5)
+beta_true = (B'*B + eye(size(A,2))*0.5) \ x
+@test_approx_eq beta beta_true
+
+
+######## testing nonshared #########
+logic_ns = fetch(@spawnat A.logic[1].where BayesianDataFusion.nonshared(fetch(A.logic[1])) )
+@test ! isdefined(logic_ns, :tmp)
+@test ! isdefined(logic_ns, :sems)
+
+A_ns = BayesianDataFusion.nonshared(A)
+@test size(A) == size(A_ns)
+@test ! isdefined(A_ns, :tmp)
+@test ! isdefined(A_ns, :sems)

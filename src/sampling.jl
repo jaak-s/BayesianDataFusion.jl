@@ -1,7 +1,8 @@
 using Iterators
+using Distributions
 
 export pred, pred_all
-export solve_cg, solve_full
+export solve_full
 
 function pred(r::Relation, probe_vec::DataFrame, F)
   if ! hasFeatures(r)
@@ -223,29 +224,26 @@ function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{I
   chol(covar)' * randn(length(mu)) + mu
 end
 
-function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool)
+function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool, tol=NaN )
   N, D = size(sample_u_c)
   numF = size(entity.F, 2)
+  if isnan(tol)  ## default tolerance
+    tol = eps() * numF
+  end
   
   mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
-  Ft_y = At_mul_B(entity.F, sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
+  Ft_y = Ft_mul_B(entity, sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
+  #Ft_y = At_mul_B(entity.F, sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   
   if use_ff
     beta = solve_full(entity.FF, Ft_y, lambda_beta)
+  elseif ! isempty(entity.Frefs)
+    beta = solve_cg2(entity.Frefs, Ft_y, lambda_beta, tol=tol)
   else
-    beta = solve_cg(entity.F, Ft_y, lambda_beta)
+    error("No CG solver if entity has no Frefs or FF.")
+    #beta = solve_cg(entity.F, Ft_y, lambda_beta)
   end
   return beta, Ft_y
-end
-
-function solve_cg(F, rhs, lambda_beta)
-  D = size(rhs, 2)
-  beta_list = pmap( d -> ridge_solve(F, rhs[:,d], lambda_beta), 1:D )
-  beta = zeros(size(rhs,1), D)
-  for d = 1:D
-    beta[:,d] = beta_list[d]
-  end
-  return beta
 end
 
 function solve_full(FF, rhs, lambda_beta)

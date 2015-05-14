@@ -1,7 +1,20 @@
-export pmult, imult
-export psparse, ParallelSparseMatrix
-export SparseMatrixCSR, sparse_csr
+## basic copyto function, sets F up on cg pid
+copyto(F::Any, pids::Vector{Int}) = F
 
+## computes y = (F'F + lambda \eye) x
+function AtA_mul_B!(y::AbstractVector{Float64}, F, x::AbstractVector{Float64}, lambda::Float64)
+  length(y) == length(x) || throw(DimensionMismatch("length(y)=$(length(y)) must equal length(x)=$(length(x))"))
+  At_mul_B!(y, F, F*x)
+  for i = 1:length(y)
+    y[i] += lambda*x[i]
+  end
+  return nothing
+end
+
+## for standard objects nonshared does not do anything
+nonshared(A) = A
+
+######### cg code ##########
 function normsq{T}(x::Vector{T})
   s = zero(T)
   @inbounds @simd for i=1:length(x)
@@ -9,6 +22,8 @@ function normsq{T}(x::Vector{T})
   end
   s
 end
+
+norm2{T}(x::Vector{T}) = sqrt(normsq(x))
 
 function prod_add!(p, mult, r)
   @inbounds @simd for i=1:length(p)
@@ -28,18 +43,36 @@ function sub_prod!(x, mult, v)
   end
 end
 
-## K.A -> A
-function parallel_cg(x, A, b;
-         tol::Real=size(A,2)*eps(), maxiter::Integer=size(A,2))
+## function for calling with remote
+cg_AtA_ref(Aref::RemoteRef, b::AbstractVector{Float64}, lambda::Float64, tol::Float64, maxiter::Int=length(b)) = cg_AtA(fetch(Aref), b, lambda, tol=tol, maxiter=maxiter)
+
+## p and z are parallelized (SharedArray)
+function cg_AtA(A::ParallelSBM, b::AbstractVector{Float64}, lambda::Float64;
+         tol::Float64=size(A,2)*eps(), maxiter::Int=size(A,2))
+    return cg_AtA(A, b, lambda, A.sh1, A.sh2, tol=tol, maxiter=maxiter)
+end
+
+## non-parallel version
+function cg_AtA(A, b::AbstractVector{Float64}, lambda::Float64;
+         tol::Float64=size(A,2)*eps(), maxiter::Int=size(A,2))
+    return cg_AtA(A, b, lambda, zeros(length(b)), zeros(length(b)), tol=tol, maxiter=maxiter)
+end
+
+function cg_AtA(A, b::AbstractVector{Float64}, lambda::Float64, p::AbstractVector{Float64}, z::AbstractVector{Float64};
+         tol::Float64=size(A,2)*eps(), maxiter::Int=size(A,2))
     tol = tol * norm(b)
-    r = b - A * x
-    p = copy(r)
+    ## x is set initially to 0
+    x = zeros(Float64, length(b))
+    #r = b - A * x
+    r = zeros(length(x)) + b
+    Base.copy!(p, r)
     bkden = zero(eltype(x))
-    err   = norm(r)
 
     for iter = 1:maxiter
-        err < tol && return x, err, iter
-        bknum = normsq(r)
+        bknum = normsq(r)::Float64
+        err   = sqrt(bknum)
+
+        err < tol && return x#, err, iter
 
         if iter > 1
             bk = bknum / bkden
@@ -47,109 +80,13 @@ function parallel_cg(x, A, b;
         end
         bkden = bknum
 
-        z = A * p
+        ## z = (A'A + lambda*\eye) * p
+        AtA_mul_B!(z, A, p, lambda)
 
         ak = bknum / dot(z, p)
 
         add_prod!(x, ak, p)
         sub_prod!(r, ak, z)
-        
-        err = norm(r)
     end
-    x, err, maxiter
-end
-
-type ParallelSparseMatrix{TF}
-  F::TF
-  refs::Vector{RemoteRef}
-  procs::Vector{Int}
-end
-
-function psparse(F, procs)
-  ParallelSparseMatrix(
-    F,
-    map(i -> @spawnat(i, fetch(F)), procs),
-    procs)
-end
-
-import Base.At_mul_B
-import Base.isempty
-import Base.size
-import Base.eltype
-import Base.Ac_mul_B
-
-At_mul_B(A::ParallelSparseMatrix, U::AbstractMatrix) = pmult(size(A.F,2), A.refs, U, A.procs, imult)
-*(A::ParallelSparseMatrix, U::AbstractMatrix)        = pmult(size(A.F,1), A.refs, U, A.procs, mult)
-isempty(A::ParallelSparseMatrix) = isempty(A.F)
-size(A::ParallelSparseMatrix)    = size(A.F)
-size(A::ParallelSparseMatrix, i::Int) = size(A.F, i::Int)
-eltype(A::ParallelSparseMatrix)       = eltype(A.F)
-Ac_mul_B(A::ParallelSparseMatrix, B::ParallelSparseMatrix) = Ac_mul_B(A.F, B.F)
-At_mul_B(A::ParallelSparseMatrix, B::ParallelSparseMatrix) = At_mul_B(A.F, B.F)
-
-
-###### CSR matrix ######
-
-type SparseMatrixCSR{Tv,Ti}
-  csc::SparseMatrixCSC{Tv,Ti}
-end
-
-sparse_csr(csc::SparseMatrixCSC) = SparseMatrixCSR(csc')
-sparse_csr(rows, cols, vals) = SparseMatrixCSR(sparse(cols, rows, vals))
-
-At_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
-Ac_mul_B(A::SparseMatrixCSR, u::AbstractVector) = A.csc * u
-*(A::SparseMatrixCSR, u::AbstractVector) = At_mul_B(A.csc, u)
-At_mul_B(A::SparseMatrixCSR, B::SparseMatrixCSR) = A_mul_Bt(A.csc, B.csc)
-isempty(A::SparseMatrixCSR) = isempty(A.csc)
-
-eltype(A::SparseMatrixCSR) = eltype(A.csc)
-function size(A::SparseMatrixCSR)
-  m,n = size(A.csc)
-  return n,m
-end
-size(A::SparseMatrixCSR,d) = (d>2 ? 1 : size(A)[d])
-
-
-###### parallel multiplication ######
-
-function imult(Fref, u)
-  return At_mul_B(fetch(Fref), u)
-end
-
-function mult(Fref, u)
-  #Flocal = fetch(Fref)
-  #if size(Flocal,2) != size(u,1)
-  #  error(@sprintf("#columns of F(%d) has to equal number of rows of U(%d).", size(Flocal,2), size(u,1)) )
-  #end
-  return fetch(Fref) * u
-end
-
-## setup:
-## feat = genes.F
-## Frefs = map(i -> @spawnat(i, fetch(feat)), workers())
-function pmult(nrows::Integer, Frefs, U, procs, mfun)
-    np = length(procs)  # determine the number of processes available
-    n  = size(U,2)
-    results = zeros(nrows, n)
-    i = 1
-    # function to produce the next work item from the queue.
-    # in this case it's just an index.
-    nextidx() = (idx=i; i+=1; idx)
-    @sync begin
-        for p in 1:length(procs)
-            if procs[p] != myid() || np == 1
-                @async begin
-                    while true
-                        idx = nextidx()
-                        if idx > n
-                            break
-                        end
-                        results[:,idx] = remotecall_fetch(procs[p], mfun, Frefs[p], U[:,idx])
-                    end
-                end
-            end
-        end
-    end
-    results
+    x#, sqrt(normsq(r)), maxiter
 end

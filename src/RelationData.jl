@@ -25,6 +25,7 @@ end
 type Entity{FT,R}
   F::FT
   FF
+  Frefs::Vector{RemoteRef}
   relations::Vector{R}
   count::Int64
   name::String
@@ -35,7 +36,7 @@ type Entity{FT,R}
   nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=false, mu=1.0, nu=1.0) = new(F, zeros(0,0), relations, count, name, lb, lb_sample, mu, nu)
+  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=false, mu=1.0, nu=1.0) = new(F, zeros(0,0), RemoteRef[], relations, count, name, lb, lb_sample, mu, nu)
 end
 
 Entity(name::String; F=(), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
@@ -201,11 +202,34 @@ function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   return RelationData(idf; kw...)
 end
 
-function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500)
+## computes F * beta
+function F_mul_beta{F}(en::Entity{F,Relation})
+  if ! isempty(en.Frefs)
+    return Frefs_mul_B(en.Frefs, en.model.beta)
+  else
+    return en.F * en.model.beta
+  end
+end
+
+## computes F' * beta
+function Ft_mul_B{F}(en::Entity{F,Relation}, B::Matrix{Float64})
+  if ! isempty(en.Frefs)
+    return Frefs_t_mul_B(en.Frefs, B)
+  else
+    return At_mul_B(en.F, B)
+  end
+end
+
+function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500, cg_pids=Int[myid()])
   for en in data.entities
     initModel!(en, num_latent, lambda_beta = lambda_beta)
-    if hasFeatures(en) && size(en.F,2) <= compute_ff_size
-      en.FF = full(At_mul_B(en.F, en.F))
+    if hasFeatures(en)
+      if size(en.F,2) <= compute_ff_size
+        en.FF = full(At_mul_B(en.F, en.F))
+      else
+        ## setup CG on julia threads
+        init_Frefs!(en, num_latent, cg_pids)
+      end
     end
   end
   for r in data.relations
@@ -215,6 +239,36 @@ function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size
       r.temp.linear_values = r.model.mean_value * ones(numData(r))
       r.temp.FF = full(r.F' * r.F)
     end
+  end
+end
+
+function init_Frefs!(en::Entity, num_latent::Int, pids::Vector{Int})
+  Fns = nonshared(en.F)
+  empty!(en.Frefs)
+  for i = 1:min(length(pids), num_latent)
+    pid = pids[i]
+    push!(en.Frefs, @spawnat pid copyto(Fns, Int[pid]))
+  end
+end
+
+function init_Frefs!(en::Entity, num_latent::Int, pids::Vector{Vector{Int}})
+  Fns = nonshared(en.F)
+  empty!(en.Frefs)
+  for i = 1:min(length(pids), num_latent)
+    pid   = pids[i][1]
+    mulpids = pids[i][2:end]
+    isempty(mulpids) && push!(mulpids, pid)
+    push!(en.Frefs, @spawnat pid copyto(Fns, mulpids))
+  end
+end
+
+function init_Frefs!(en::Entity, num_latent::Int, pids::Dict{Int, Vector{Int}})
+  Fns = nonshared(en.F)
+  empty!(en.Frefs)
+  for e in pids
+    pid     = e[1]
+    mulpids = e[2]
+    push!(en.Frefs, @spawnat pid copyto(Fns, mulpids))
   end
 end
 

@@ -1,5 +1,4 @@
 include("sampling.jl")
-include("purecg.jl")
 
 export macau
 
@@ -14,8 +13,10 @@ function macau(data::RelationData;
               compute_ff_size = 6500,
               latent_pids     = Int[],
               latent_blas_threads = 1,
+              cg_pids         = workers(),
               full_prediction = false,
               rmse_train      = false,
+              tol             = NaN,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
@@ -24,7 +25,7 @@ function macau(data::RelationData;
   verbose && println("Model setup")
 
   if reset_model
-    reset!(data, num_latent, lambda_beta = lambda_beta, compute_ff_size = compute_ff_size)
+    reset!(data, num_latent, lambda_beta = lambda_beta, compute_ff_size = compute_ff_size, cg_pids=cg_pids)
   end
 
   modes = map(entity -> Int64[ find(en -> en == entity, r.entities)[1] for r in entity.relations ],
@@ -38,14 +39,14 @@ function macau(data::RelationData;
   latent_multi_threading = false
   local latent_data_refs
 
-  if length(latent_pids) > 1
+  if length(latent_pids) >= 1
     ## initializing multi-threaded latent sampling:
     if length(data.relations) == 1 &&
        length(data.entities)  == 2 &&
        ! hasFeatures(data.relations[1])
 
        latent_multi_threading = true
-       println("Setting up multi-threaded sampling of latent vectors. Using $(length(latent_pids)) threads.")
+       verbose && println("Setting up multi-threaded sampling of latent vectors. Using $(length(latent_pids)) threads.")
        fastidf = FastIDF(data.relations[1].data)
        latent_data_refs = map( i -> @spawnat( latent_pids[i], fetch(fastidf)), 1:length(latent_pids) )
        ## setting blas threads
@@ -55,7 +56,7 @@ function macau(data::RelationData;
          end
        end
     else
-      println("Cannot use multi-threaded sampling of latent vectors, only works if 1 relation and 2 entities.")
+      verbose && println("Cannot use multi-threaded sampling of latent vectors, only works if 1 relation and 2 entities.")
     end
   end
 
@@ -95,7 +96,7 @@ function macau(data::RelationData;
       Tinv = mj.WI
 
       if hasFeatures(en)
-        uhat = en.F * mj.beta
+        uhat = F_mul_beta(en)
         U = mj.sample - uhat
         if full_lambda_u
           nu   += size(mj.beta, 1)
@@ -128,7 +129,7 @@ function macau(data::RelationData;
 
       if hasFeatures( data.entities[j] )
         use_ff = size(data.entities[j].F, 2) <= compute_ff_size
-        mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta, use_ff)
+        mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta, use_ff, tol)
         if en.lambda_beta_sample
           en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
         end
