@@ -1,4 +1,5 @@
 using Iterators
+using Distributions
 
 export pred, pred_all
 export solve_full

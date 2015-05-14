@@ -4,6 +4,7 @@ using Distributions
 using DataFrames
 
 include("ROC.jl")
+include("normal_wishart.jl")
 include("At_mul_B.jl")
 include("RelationData.jl")
 include("parallel_matrix.jl")
