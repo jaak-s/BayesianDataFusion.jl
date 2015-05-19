@@ -39,7 +39,7 @@ type Entity{FT,R}
   Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=false, mu=1.0, nu=1.0) = new(F, zeros(0,0), RemoteRef[], relations, count, name, lb, lb_sample, mu, nu)
 end
 
-Entity(name::String; F=(), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
+Entity(name::String; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
 
 ## initializes the model parameters
 function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = NaN)
