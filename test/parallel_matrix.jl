@@ -85,6 +85,10 @@ sxn = zeros(Float64, size(sbm,2))
 AtA_mul_B!(sxn, sbm, x, 0.1)
 @test_approx_eq sxn xn_true
 
+## making sure SparseBinMatrix with Int64 input works
+sbm64 = SparseBinMatrix(convert(Vector{Int64}, rows), convert(Vector{Int64}, cols))
+@test sbm.rows == sbm64.rows
+@test sbm.cols == sbm64.cols
 
 ######## make balanced parallel matrix ########
 Abal = balanced_parallelsbm(rows, cols, workers()[1:2])

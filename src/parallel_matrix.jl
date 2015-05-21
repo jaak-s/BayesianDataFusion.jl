@@ -16,6 +16,7 @@ end
 
 SparseBinMatrix(rows::Vector{Int32}, cols::Vector{Int32}) = SparseBinMatrix(maximum(rows), maximum(cols), minimum(rows):maximum(rows), minimum(cols):maximum(cols), rows, cols)
 SparseBinMatrix(m, n, rows::Vector{Int32}, cols::Vector{Int32}) = SparseBinMatrix(m, n, minimum(rows):maximum(rows), minimum(cols):maximum(cols), rows, cols)
+SparseBinMatrix(rows::Vector{Int64}, cols::Vector{Int64}) = SparseBinMatrix(convert(Vector{Int32}, rows), convert(Vector{Int32}, cols))
 
 type ParallelLogic
   ## for parallel compute
