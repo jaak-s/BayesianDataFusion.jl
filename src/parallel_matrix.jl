@@ -224,6 +224,9 @@ function A_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArr
     return
 end
 
+## multiplication: y = A' * x
+At_mul_B{Tx}(A::SparseBinMatrix, x::AbstractArray{Tx,1}) = (y = zeros(Tx, A.n); At_mul_B!(y, A, x); y)
+
 function At_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArray{Tx,1})
     A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(y))"))
     A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(x))"))

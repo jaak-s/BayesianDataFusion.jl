@@ -42,8 +42,10 @@ rows = Int32[ 1:200; 151:350 ]
 cols = Int32[ 151:350; 1:2:399 ]
 
 A = ParallelSBM(rows, cols, workers()[1:2])
+sbm = SparseBinMatrix(rows, cols)
 
 @test size(A) == (350, 399)
+@test size(sbm) == (350, 399)
 
 y = SharedArray(Float64, size(A, 1))
 x = SharedArray(Float64, size(A, 2))
@@ -67,6 +69,7 @@ x9  = rand(A.m)
 y9  = At_mul_B(A, x9)
 y9e = At_mul_B(B, x9)
 @test_approx_eq y9 y9e
+@test_approx_eq At_mul_B(sbm, x9) y9e
 
 ## testing AtA_mul_B!
 xn = SharedArray(Float64, size(A, 2))
@@ -80,7 +83,6 @@ AtA_mul_B!(Bxn, B, x, 0.1)
 @test_approx_eq Bxn xn_true
 
 ## AtA_mul_B! for SparseBinMatrix
-sbm = SparseBinMatrix(rows, cols)
 sxn = zeros(Float64, size(sbm,2))
 AtA_mul_B!(sxn, sbm, x, 0.1)
 @test_approx_eq sxn xn_true
