@@ -14,8 +14,11 @@ type SparseBinMatrix
   cols::Vector{Int32}
 end
 
-SparseBinMatrix(rows::Vector{Int32}, cols::Vector{Int32}) = SparseBinMatrix(maximum(rows), maximum(cols), minimum(rows):maximum(rows), minimum(cols):maximum(cols), rows, cols)
-SparseBinMatrix(m, n, rows::Vector{Int32}, cols::Vector{Int32}) = SparseBinMatrix(m, n, minimum(rows):maximum(rows), minimum(cols):maximum(cols), rows, cols)
+function SparseBinMatrix(m, n, rows::Vector{Int32}, cols::Vector{Int32})
+  length(rows) == length(cols) || throw(DimensionMismatch("length(rows) must equal length(cols)"))
+  return SparseBinMatrix(m, n, minimum(rows):maximum(rows), minimum(cols):maximum(cols), rows, cols)
+end
+SparseBinMatrix(rows::Vector{Int32}, cols::Vector{Int32}) = SparseBinMatrix(maximum(rows), maximum(cols), rows, cols)
 SparseBinMatrix(rows::Vector{Int64}, cols::Vector{Int64}) = SparseBinMatrix(convert(Vector{Int32}, rows), convert(Vector{Int32}, cols))
 
 type ParallelLogic
@@ -228,8 +231,8 @@ end
 At_mul_B{Tx}(A::SparseBinMatrix, x::AbstractArray{Tx,1}) = (y = zeros(Tx, A.n); At_mul_B!(y, A, x); y)
 
 function At_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractArray{Tx,1})
-    A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(y))"))
-    A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(x))"))
+    A.n == length(y) || throw(DimensionMismatch("A.n=$(A.n) must equal length(y)=$(length(y))"))
+    A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(x)=$(length(x))"))
     fill!(y, zero(Tx) )
     rows = A.rows
     cols = A.cols
