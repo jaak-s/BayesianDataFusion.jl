@@ -39,7 +39,7 @@ type Entity{FT,R}
   Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=false, mu=1.0, nu=1.0) = new(F, zeros(0,0), RemoteRef[], relations, count, name, lb, lb_sample, mu, nu)
 end
 
-Entity(name::String; F=(), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
+Entity(name::String; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
 
 ## initializes the model parameters
 function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = NaN)
@@ -165,9 +165,9 @@ type RelationData
 
   RelationData() = new( Entity[], Relation[] )
 
-  function RelationData(Am::IndexedDF; feat1=(), feat2=(), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false, lambda_beta=1.0)
+  function RelationData(Am::IndexedDF; feat1=zeros(0,0), feat2=zeros(0,0), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false, lambda_beta=1.0)
     r  = alpha_sample ?Relation(Am, relation, class_cut) :Relation(Am, relation, class_cut, alpha)
-    e1 = Entity{typeof(feat1), Relation}( feat1, [r], size(r,1), entity1, lambda_beta )
+    e1 = Entity{isempty(feat1) ? Any :typeof(feat1), Relation}( feat1, [r], size(r,1), entity1, lambda_beta )
     e2 = Entity{typeof(feat2), Relation}( feat2, [r], size(r,2), entity2, lambda_beta )
     if ! isempty(feat1) && size(feat1,1) != size(r,1)
       throw(ArgumentError("Number of rows in feat1 $(size(feat1,1)) must equal number of rows in the relation $(size(Am,1))"))
@@ -187,7 +187,7 @@ function RelationData(Am::DataFrame; rname="R1", class_cut=log10(200), alpha=5.0
   rd   = RelationData()
   push!(rd.relations, Relation(idf, rname, class_cut, alpha))
   for d in 1:length(dims)
-    en = Entity{Any, Relation}( (), [rd.relations[1]], size(idf,d), string(names(Am)[d]))
+    en = Entity{Any, Relation}( zeros(0,0), [rd.relations[1]], size(idf,d), string(names(Am)[d]))
     push!(rd.entities, en)
     push!(rd.relations[1].entities, en)
   end
