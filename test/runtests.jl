@@ -47,7 +47,7 @@ x12 = getData(X3, 1, 2)
 @test size(x12,1) == getCount(X3, 1, 2)
 
 # creating relation from DataFrame
-a = DataFrame(A=[1,2,2,3], B=[1,3,1,4], v=[0.4, 1.0, -1.9, 1.4])
+a = DataFrame(A=[1,2,2,3,2], B=[1,3,1,4,4], v=[0.4, 1.0, -1.9, 1.4, 0.85])
 r = Relation(a, "a")
 @test size(r) == (3,4)
 
@@ -58,6 +58,22 @@ assignToTest!(r, [1, 4])
 
 # creating empty Entity
 e1 = Entity("e1")
+e2 = Entity("e2")
+e3 = Entity("e3")
+
+# creating Relation from two entities
+r2 = Relation(a, "r2", [e1, e2])
+@test e1.count == size(r2, 1)
+@test e2.count == size(r2, 2)
+@test size(r2) == (3,4)
+
+a3 = DataFrame(B=[1], C=[5], v=[0.1])
+r3 = Relation(a3, "r3", [e2, e3])
+@test e3.count == 5
+@test size(r3) == (4, 5)
+
+a4 = DataFrame(A=[5], C=[4], v=[0.1])
+@test_throws ArgumentError Relation(a4, "r4", [e1, e3])
 
 # testing RelationData from sparse matrix
 Y  = sprand(15,10, 0.1)

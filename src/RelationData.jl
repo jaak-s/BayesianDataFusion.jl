@@ -119,7 +119,25 @@ type Relation
 
   Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel(alpha))
   Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel())
-  Relation(data::DataFrame, name::String, entities=Entity[]; class_cut=0.0) = new(IndexedDF(data), (), entities, name, data[Int[],:], (), Bool[], class_cut, RelationModel())
+  ## Relation with already setup entities
+  function Relation(data::DataFrame, name::String, entities=Entity[]; class_cut=0.0)
+    dims = Int64[maximum(data[:,i]) for i in 1 : size(data,2)-1]
+    if ! isempty(entities)
+      size(data, 2) - 1 == length(entities) || throw(ArgumentError("data has $(size(data,2)) columns but needs to have $(length(entities)) which is number of entities + 1"))
+      for i in 1:length(entities)
+        en = entities[i]
+        ## update the counts of the entity
+        if en.count == 0
+          en.count = dims[i]
+        elseif en.count > dims[i]
+          dims[i] = en.count
+        elseif en.count < dims[i]
+          throw(ArgumentError("Entity $(en.name) has smaller count $(en.count) than the largest id in the data $(dims[i]). Set entity.count manually before creating the relation."))
+        end
+      end
+    end
+    return new(IndexedDF(data, dims), (), entities, name, data[Int[],:], (), Bool[], class_cut, RelationModel())
+  end
 end
 
 import Base.size
