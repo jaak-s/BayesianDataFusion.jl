@@ -89,7 +89,7 @@ result = macau(rd, burnin = 10, psamples = 10, verbose = false)
 # testing pred_all
 Yhat = pred_all(rd.relations[1])
 @test size(Yhat) == (15, 10)
-@test_approx_eq Yhat[2,3] (rd.entities[1].model.sample[2,:] * rd.entities[2].model.sample[3,:]')[1] + rd.relations[1].model.mean_value
+@test_approx_eq Yhat[2,3] (rd.entities[1].model.sample[:,2]' * rd.entities[2].model.sample[:,3])[1] + rd.relations[1].model.mean_value
 
 # predict all
 result1 = macau(rd, burnin = 10, psamples = 10, verbose = false, full_prediction = true)
@@ -112,7 +112,7 @@ ytrain_hat = pred(rd.relations[1])
 @test length(ytrain_hat) == numData(rd.relations[1])
 row = rd.relations[1].data.df[1,1]
 col = rd.relations[1].data.df[1,2]
-y1 = sum(rd.entities[1].model.sample[row,:] .* rd.entities[2].model.sample[col,:]) + valueMean(rd.relations[1].data)
+y1 = sum(rd.entities[1].model.sample[:,row] .* rd.entities[2].model.sample[:,col]) + valueMean(rd.relations[1].data)
 @test_approx_eq y1 ytrain_hat[1]
 
 # alpha sampling
