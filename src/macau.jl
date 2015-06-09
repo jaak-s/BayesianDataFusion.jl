@@ -1,5 +1,3 @@
-include("sampling.jl")
-
 export macau
 
 function macau(data::RelationData;

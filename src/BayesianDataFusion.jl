@@ -8,6 +8,7 @@ include("parallel_matrix.jl")
 include("sparsebin_csr.jl")
 include("parallel_csr.jl")
 include("parallel_cg.jl")
+include("sampling.jl")
 include("macau.jl")
 
 include("data_reading.jl")
