@@ -1,7 +1,6 @@
 using Iterators
 using Distributions
 
-using Debug
 export pred, pred_all
 export solve_full
 
@@ -150,20 +149,20 @@ end
 ## Sampling U, V for 2-way relation. Used by parallel code
 ## mu_u is Matrix of size num_latent x length(urange)
 function sample_latent_range(urange, Au::FastIDF, mode::Int, mean_rating, sample_mt, alpha, mu_u::Matrix{Float64}, Lambda_u)
-  U = zeros(length(urange), size(mu_u, 1))
+  U = zeros(size(mu_u, 1), length(urange))
   for i in 1:length(urange)
     u = urange[i]
-    U[i,:] = sample_user_basic(u, Au, mode, mean_rating, sample_mt, alpha, mu_u[:,i], Lambda_u)
+    U[:,i] = sample_user_basic(u, Au, mode, mean_rating, sample_mt, alpha, mu_u[:,i], Lambda_u)
   end
   return U
 end
 
 ## Sampling U, V for 2-way relation. Used by parallel code
 function sample_latent_range(urange, Au::FastIDF, mode::Int, mean_rating, sample_mt, alpha, mu_u::Vector{Float64}, Lambda_u)
-  U = zeros(length(urange), length(mu_u))
+  U = zeros(length(mu_u), length(urange))
   for i in 1:length(urange)
     u = urange[i]
-    U[i,:] = sample_user_basic(u, Au, mode, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
+    U[:,i] = sample_user_basic(u, Au, mode, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
   end
   return U
 end

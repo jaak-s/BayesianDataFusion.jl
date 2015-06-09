@@ -1,6 +1,5 @@
 export macau
 
-using Debug
 function macau(data::RelationData;
               num_latent::Int = 10,
               lambda_beta     = NaN,

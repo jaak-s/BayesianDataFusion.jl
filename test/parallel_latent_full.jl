@@ -17,8 +17,8 @@ W = sparse(A * B')
 rd = RelationData(W, class_cut = 0.5, feat1 = X)
 assignToTest!(rd.relations[1], 50)
 
-#result = macau(rd, burnin = 10, psamples = 10, num_latent=5, latent_pids=workers())
-#@test result["latent_multi_threading"] == true
+result = macau(rd, burnin = 10, psamples = 10, num_latent=5, latent_pids=workers())
+@test result["latent_multi_threading"] == true
 
 result0 = macau(rd, burnin = 10, psamples = 10, num_latent=5, latent_pids=Int[])
 @test result0["latent_multi_threading"] == false
