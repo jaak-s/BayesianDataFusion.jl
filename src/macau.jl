@@ -1,5 +1,3 @@
-include("sampling.jl")
-
 export macau
 
 function macau(data::RelationData;
@@ -96,7 +94,7 @@ function macau(data::RelationData;
       Tinv = mj.WI
 
       if hasFeatures(en)
-        uhat = F_mul_beta(en)
+        uhat = F_mul_beta(en)'
         U = mj.sample - uhat
         if full_lambda_u
           nu   += size(mj.beta, 1)
@@ -112,7 +110,7 @@ function macau(data::RelationData;
       if latent_multi_threading
         sample_v = data.entities[j == 1 ? 2 : 1].model.sample
         if hasFeatures(en)
-          mu_matrix = mj.mu .+ uhat'
+          mu_matrix = mj.mu .+ uhat
           sample_latent_all!(mj.sample, latent_data_refs, latent_pids, modes[j][1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mu_matrix, mj.Lambda)
         else
           sample_latent_all!(mj.sample, latent_data_refs, latent_pids, modes[j][1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mj.mu, mj.Lambda)
@@ -120,7 +118,7 @@ function macau(data::RelationData;
       else
         ## single thread
         if hasFeatures(en)
-          mu_matrix = mj.mu .+ uhat'
+          mu_matrix = mj.mu .+ uhat
           sample_user2_all!(data.entities[j], mu_matrix, modes[j], modes_other[j])
         else
           sample_user2_all!(data.entities[j], modes[j], modes_other[j])
@@ -129,7 +127,7 @@ function macau(data::RelationData;
 
       if hasFeatures( data.entities[j] )
         use_ff = size(data.entities[j].F, 2) <= compute_ff_size
-        mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu', mj.Lambda, data.entities[j].lambda_beta, use_ff, tol)
+        mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu, mj.Lambda, data.entities[j].lambda_beta, use_ff, tol)
         if en.lambda_beta_sample
           en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
         end

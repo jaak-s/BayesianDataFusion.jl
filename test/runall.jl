@@ -1,0 +1,5 @@
+include("runtests.jl")
+include("parallel_matrix.jl")
+include("parallel_mult.jl")
+include("parallel_latent_full.jl")
+include("heavy_copyto.jl")

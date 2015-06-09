@@ -25,6 +25,6 @@ for i = 1:size(A,1)
   s1 = BayesianDataFusion.sample_user2(rd.entities[e1], i, rd.entities[e1].model.mu, Int[e1], Vector{Int}[ Int[e2]])
 
   srand(i)
-  s2 = BayesianDataFusion.sample_user_basic(i, fdata, e1, rd.relations[1].model.mean_value, rd.entities[e2].model.sample', 5.0, rd.entities[e1].model.mu, rd.entities[e1].model.Lambda)
+  s2 = BayesianDataFusion.sample_user_basic(i, fdata, e1, rd.relations[1].model.mean_value, rd.entities[e2].model.sample, 5.0, rd.entities[e1].model.mu, rd.entities[e1].model.Lambda)
   @test_approx_eq s1 s2
 end

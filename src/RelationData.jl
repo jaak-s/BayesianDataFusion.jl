@@ -9,7 +9,7 @@ export Entity, toStr, normalizeFeatures!, normalizeRows!
 export load_mf1c
 
 type EntityModel
-  sample::Matrix{Float64}  ## latent vectors (each row is one instance)
+  sample::Matrix{Float64}  ## latent vectors (each column is one instance)
 
   mu    ::Vector{Float64}  ## mean
   Lambda::Matrix{Float64}  ## Precision matrix
@@ -46,7 +46,7 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
   m = EntityModel()
   entity.model = m
 
-  m.sample = zeros(entity.count, num_latent)
+  m.sample = zeros(num_latent, entity.count)
   m.mu     = zeros(num_latent)
   m.Lambda = eye(num_latent)
   if hasFeatures(entity)
