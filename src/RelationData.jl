@@ -6,6 +6,7 @@ typealias SparseMatrix SparseMatrixCSC{Float64, Int64}
 export RelationData, addRelation!
 export Relation, numData, numTest, assignToTest!
 export Entity, toStr, normalizeFeatures!, normalizeRows!
+export EntityModel
 export load_mf1c
 
 type EntityModel
@@ -20,6 +21,15 @@ type EntityModel
   WI    ::Matrix{Float64}  ## Hyper-prior for NormalWishart (inverse of W)
 
   EntityModel() = new()
+  EntityModel(num_latent::Int, num_instances::Int) = new(
+    zeros(num_latent, num_instances), ## sample
+    zeros(num_latent),    ## mu
+    eye(num_latent),      ## Lambda
+    zeros(0, num_latent), ## beta
+    zeros(num_latent),    ## mu0
+    2.0,                  ## b0
+    eye(num_latent)       ## WI
+  )
 end
 
 type Entity{FT,R}
