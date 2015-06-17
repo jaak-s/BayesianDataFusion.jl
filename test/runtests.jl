@@ -104,6 +104,26 @@ y1 = result1["predictions"][:pred][1]
 result1a = macau(rd, burnin = 1, psamples = 2, verbose = false, rmse_train = true)
 @test result1a["RMSE_train"] >= 0
 
+# writing output (latent vectors) works
+if isdir("/tmp")
+  rd2 = RelationData(Y, class_cut = 0.5, entity1 = "e1", entity2 = "e2")
+  result1b = macau(rd2, burnin = 1, psamples = 2, verbose = false, num_latent = 5, output = "/tmp/macau-runtest")
+  @test isfile("/tmp/macau-runtest-e1-1.binary")
+  @test isfile("/tmp/macau-runtest-e1-2.binary")
+  @test isfile("/tmp/macau-runtest-e2-1.binary")
+  @test isfile("/tmp/macau-runtest-e2-2.binary")
+  e1_sample = read_binary_float32("/tmp/macau-runtest-e1-1.binary")
+  @test size(Y,1) == size(e1_sample,2) ## number of instances
+  @test 5         == size(e1_sample,1) ## number of latents
+  e1_sample2 = read_binary_float32("/tmp/macau-runtest-e1-2.binary")
+  e1_last    = convert(Array{Float32}, rd2.entities[1].model.sample)
+  @test_approx_eq   e1_sample2 e1_last
+  rm("/tmp/macau-runtest-e1-1.binary")
+  rm("/tmp/macau-runtest-e1-2.binary")
+  rm("/tmp/macau-runtest-e2-1.binary")
+  rm("/tmp/macau-runtest-e2-2.binary")
+end
+
 # custom function on latent variables
 f1(a) = length(a.entities)
 result2 = macau(rd, burnin = 5, psamples = 6, verbose = false, f = f1)

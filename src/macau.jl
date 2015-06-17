@@ -15,6 +15,7 @@ function macau(data::RelationData;
               full_prediction = false,
               rmse_train      = false,
               tol             = NaN,
+              output          = "",
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
@@ -142,7 +143,14 @@ function macau(data::RelationData;
       yhat_full += pred_all( data.relations[1] )
     end
 
+
     if i > burnin
+      if length(output) > 0
+        ## saving latent vectors to disk
+        for en in data.entities
+          write_binary_matrix("$output-$(en.name)-$(i-burnin).binary", convert(Array{Float32}, en.model.sample) )
+        end
+      end
       if rmse_train
         train_rat = pred(rel)
       end
