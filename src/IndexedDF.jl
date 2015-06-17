@@ -36,7 +36,7 @@ function removeSamples(idf::IndexedDF, samples)
   return IndexedDF(df, size(idf))
 end
 
-getValues(idf::IndexedDF) = vec(array(idf.df[:, end]))
+getValues(idf::IndexedDF) = convert(Array, idf.df[:, end])
 getMode(idf::IndexedDF, mode::Integer) = idf.df[:, mode]
 getData(idf::IndexedDF, mode::Integer, i::Integer)  = idf.df[ idf.index[mode][i], :]
 getCount(idf::IndexedDF, mode::Integer, i::Integer) = length( idf.index[mode][i] )
@@ -49,7 +49,7 @@ type FastIDF{Ti,Tv}
   index::Vector{Vector{Vector{Int64}}}
 end
 
-FastIDF(idf::IndexedDF) = FastIDF(array(idf.df[:,1:end-1]), array(idf.df[:,end]), idf.index)
+FastIDF(idf::IndexedDF) = FastIDF(convert(Array, idf.df[:,1:end-1]), convert(Array, idf.df[:,end]), idf.index)
 
 function getData(f::FastIDF, mode::Integer, i::Integer)
   id = f.index[mode][i]

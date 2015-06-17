@@ -204,7 +204,7 @@ function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{I
   for r = 1:length(s.relations)
     rel = s.relations[r]
     df  = getData(rel.data, modes[r], i)
-    rr  = array( df[:,end] ) - (hasFeatures(rel) ? rel.temp.linear_values[getI(rel.data, modes[r], i)] : rel.model.mean_value)
+    rr  = convert(Array, df[:,end]) - (hasFeatures(rel) ? rel.temp.linear_values[getI(rel.data, modes[r], i)] : rel.model.mean_value)
     modes_o1 = modes_other[r][1]
     modes_o2 = modes_other[r][2:end]
 
