@@ -64,6 +64,7 @@ function macau(data::RelationData;
   rmse_avg = 0.0
 
   local probe_rat_all, clamped_rat_all
+  local probe_stdev::Vector{Float64}
   local train_rat_all
   f_output = Any[]
 
@@ -149,11 +150,13 @@ function macau(data::RelationData;
         verbose && println("--------- Burn-in complete, averaging posterior samples ----------")
         counter_prob  = 1
         probe_rat_all = probe_rat
+        probe_stdev   = probe_rat .^ 2
         if rmse_train
           train_rat_all = train_rat
         end
       else
-        probe_rat_all = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
+        probe_rat_all  = (counter_prob*probe_rat_all + probe_rat)/(counter_prob+1)
+        probe_stdev   += probe_rat .^ 2
         if rmse_train
           train_rat_all = (counter_prob*train_rat_all + train_rat)/(counter_prob+1)
         end
@@ -211,7 +214,8 @@ function macau(data::RelationData;
   if numTest(data.relations[1]) > 0
     rel = data.relations[1]
     result["predictions"] = copy(rel.test_vec)
-    result["predictions"][:pred] = vec(clamped_rat_all)
+    result["predictions"][:pred]= vec(clamped_rat_all)
+    result["predictions"][:stdev] = psamples >= 2 ? sqrt(vec(probe_stdev - probe_rat_all.^2 * psamples) / (psamples - 1)) : repeat([NaN], inner=[length(probe_rat_all)])
     train_count = zeros(Int, numTest(rel), length(size(rel)) )
     for i in 1:numTest(rel)
       for mode in 1:length(size(rel))
