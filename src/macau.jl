@@ -164,7 +164,7 @@ function macau(data::RelationData;
     end
 
     if typeof(f) <: Function && i > burnin
-      f_out = f( Matrix{Float64}[en.model.sample for en in data.entities] )
+      f_out = f( data )
       push!(f_output, f_out)
     end
 

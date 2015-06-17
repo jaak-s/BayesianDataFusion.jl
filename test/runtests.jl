@@ -103,7 +103,7 @@ result1a = macau(rd, burnin = 1, psamples = 2, verbose = false, rmse_train = tru
 @test result1a["RMSE_train"] >= 0
 
 # custom function on latent variables
-f1(a) = length(a)
+f1(a) = length(a.entities)
 result2 = macau(rd, burnin = 5, psamples = 6, verbose = false, f = f1)
 @test length(result2["f_output"]) == 6
 
