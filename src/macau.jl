@@ -148,7 +148,7 @@ function macau(data::RelationData;
       if length(output) > 0
         ## saving latent vectors to disk
         for en in data.entities
-          write_binary_matrix("$output-$(en.name)-$(i-burnin).binary", convert(Array{Float32}, en.model.sample) )
+          write_binary_matrix(@sprintf("%s-%s-%03d.binary", output, en.name, i-burnin), convert(Array{Float32}, en.model.sample) )
         end
       end
       if rmse_train
