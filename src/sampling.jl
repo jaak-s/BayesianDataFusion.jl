@@ -182,12 +182,6 @@ function sample_user_basic(uu::Integer, Au::FastIDF, mode::Int, mean_rating, sam
   chol(covar)' * randn(length(mu_u)) + mu
 end
 
-type Block
-  ux::Vector{Int}   ## ids of the latent variables
-  vx::Vector{Int}   ## ids of the other side
-  Yma::Matrix{Float64} ## Y values w/o mean, size: length(v_idx) x length(u_idx)
-end
-
 function sample_users_blocked(block::Block, sample_mt::Matrix{Float64}, alpha::Float64, mu_u::Vector{Float64}, Lambda_u::Matrix{Float64})
   MM    = sample_mt[:, block.vx]
   covar = inv(Lambda_u + alpha * (MM*MM'))
@@ -195,6 +189,12 @@ function sample_users_blocked(block::Block, sample_mt::Matrix{Float64}, alpha::F
 
   # Sample from normal distribution
   chol(covar)' * randn(length(mu_u), size(mu, 2)) + mu
+end
+
+function sample_users_blocked_all!(blocks::Vector{Block}, sample_u::Matrix{Float64}, sample_m::Matrix{Float64}, alpha::Float64, mu_u::Vector{Float64}, Lambda_u::Matrix{Float64})
+  for b in blocks
+    sample_u[:, b.ux] = sample_users_blocked(b, sample_m, alpha, mu_u, Lambda_u)
+  end
 end
 
 function sample_user2_all!(s::Entity, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})

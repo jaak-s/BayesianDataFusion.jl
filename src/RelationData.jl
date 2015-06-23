@@ -357,6 +357,46 @@ function normalizeRows!(entity::Entity)
   entity.F = spdiagm( 1.0 ./ diagf ) * entity.F
 end
 
+type Block
+  ux::Vector{Int}   ## ids of the latent variables
+  vx::Vector{Int}   ## ids of the other side
+  Yma::Matrix{Float64} ## Y values w/o mean, size: length(v_idx) x length(u_idx)
+end
+
+## making blocks where all entities have the same observations (v indexes)
+function make_blocks(en::Entity)
+  rel  = en.relations[1]
+  length(rel.entities) == 2 || error("Only matrices (two entities) are supported.")
+
+  mode  = rel.entities[1] == en ? 1 : 2
+  mode2 = rel.entities[1] == en ? 2 : 1
+
+  block_dict = Dict{Set{Int}, Vector{Int}}()
+  for i in 1:en.count
+    df = getData(rel.data, mode, i)
+    vx = Set(convert(Array, df[:,2]))
+    if haskey(block_dict, vx)
+      push!( block_dict[vx], i )
+    else
+      block_dict[vx] = Int[i]
+    end
+  end
+
+  blocks = Block[]
+  for elem in values(block_dict)
+    ux  = elem
+    vx  = convert(Array, getData(rel.data, mode, elem[1])[:, mode2])
+    Yma = zeros( length(vx), length(ux) )
+    for i in 1:length(ux)
+      Yma[:,i] = convert(Array, getData(rel.data, mode, ux[i])[:, end])
+    end
+    Yma -= rel.model.mean_value
+    push!(blocks, Block(ux, vx, Yma))
+  end
+  sort!(blocks, by=x -> -length(x.ux))
+  return blocks
+end
+
 function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
                    cmp_feat_file  = "chembl_19_mf1c/chembl-IC50-compound-feat.csv",
                    normalize_feat = false,
