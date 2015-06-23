@@ -50,6 +50,19 @@ type FastIDF{Ti,Tv}
 end
 
 FastIDF(idf::IndexedDF) = FastIDF(convert(Array, idf.df[:,1:end-1]), convert(Array, idf.df[:,end]), idf.index)
+function FastIDF(df::DataFrame, dims::Vector{Int64})
+  ## indexing all columns D - 1 columns (integers)
+  index = [ [Int64[] for j in 1:i] for i in dims ]
+  for i in 1:size(df, 1)
+    for mode in 1:length(dims)
+      j = df[i, mode]
+      push!(index[mode][j], i)
+    end
+  end
+  ix = convert(Array, df[:, 1:end-1])
+  v  = convert(Array, df[:, end])
+  return FastIDF(ix, v, index)
+end
 
 function getData(f::FastIDF, mode::Integer, i::Integer)
   id = f.index[mode][i]
