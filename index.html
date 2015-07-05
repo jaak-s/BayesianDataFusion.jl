@@ -84,12 +84,12 @@
 </ul>
 <p>These methods allow to predict <strong>unobserved values</strong> in the matrices (or tensors). Since they are all Bayesian methods we can also measure the <strong>uncertainty</strong> of the predictions. BPMF and BPTF are special cases of Macau. Macau adds</p>
 <ul>
-<li><em>side information</em> for entities (e.g, user and/or movie features for factorizing movie ratings)</li>
-<li><em>side information</em> for relations (e.g., when the user went to see particular movie)</li>
+<li>use of entity <em>side information</em> to improve factorization (e.g, user and/or movie features for factorizing movie ratings)</li>
+<li>use of relation <em>side information</em> to improve factorization  (e.g., data about when user went to see particular movie)</li>
 <li>factorization of several matrices (and tensors) simultaneously.</li>
 </ul>
 <h2 id="installation">Installation</h2>
-<p>Inside Julia do following:</p>
+<p>Inside Julia:</p>
 <pre><code class="julia">Pkg.clone(&quot;https://github.com/jaak-s/BayesianDataFusion.jl.git&quot;)
 </code></pre>
 
@@ -144,5 +144,5 @@ using MAT
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-07-05 00:53:33.409854
+Build Date UTC : 2015-07-05 01:00:44.797631
 -->
