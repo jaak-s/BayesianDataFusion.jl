@@ -2,7 +2,7 @@
     "docs": [
         {
             "location": "/", 
-            "text": "BayesianDataFusion.jl package\n\n\nThis gives reference and examples for \nBayesianDataFusion.jl\n.\n\n\nFeatures\n\n\nBayesianDataFusion.jl\n provides parallel and highly optimized implementation for\n\n\n\n\nBayesian Probabilistic Matrix Factorization (BPMF)\n\n\nBayesian Probabilistic Tensor Factorization (BPTF)\n\n\nMacau - Bayesian Multi-relational Factorization with Side Information\n\n\n\n\nThese methods allow to predict \nunobserved values\n in the matrices (or tensors). Since they are all Bayesian methods we can also measure the \nuncertainty\n of the predictions. BPMF and BPTF are special cases of Macau. Macau adds\n\n\n\n\nuse of entity \nside information\n to improve factorization (e.g, user and/or movie features for factorizing movie ratings)\n\n\nuse of relation \nside information\n to improve factorization  (e.g., data about when user went to see particular movie)\n\n\nfactorization of several matrices (and tensors) simultaneously.\n\n\n\n\nInstallation\n\n\nInside Julia:\n\n\nPkg.clone(\nhttps://github.com/jaak-s/BayesianDataFusion.jl.git\n)\n\n\n\n\nUsage examples\n\n\nFactorization of (incompletely observed) matrix of movie ratings with side information for both users and movies:\n\n\nusing BayesianDataFusion\nusing MAT", 
+            "text": "BayesianDataFusion.jl package\n\n\nThis gives reference and examples for \nBayesianDataFusion.jl\n.\n\n\nFeatures\n\n\nBayesianDataFusion.jl\n provides parallel and highly optimized implementation for\n\n\n\n\nBayesian Probabilistic Matrix Factorization (BPMF)\n\n\nBayesian Probabilistic Tensor Factorization (BPTF)\n\n\nMacau - Bayesian Multi-relational Factorization with Side Information\n\n\n\n\nThese methods allow to predict \nunobserved values\n in the matrices (or tensors). Since they are all Bayesian methods we can also measure the \nuncertainty\n of the predictions. BPMF and BPTF are special cases of Macau. Macau adds\n\n\n\n\nuse of entity \nside information\n to improve factorization (e.g, user and/or movie features for factorizing movie ratings)\n\n\nuse of relation \nside information\n to improve factorization  (e.g., data about when user went to see particular movie)\n\n\nfactorization of several matrices (and tensors) simultaneously.\n\n\n\n\nInstallation\n\n\nInside Julia:\n\n\nPkg.clone(\nhttps://github.com/jaak-s/BayesianDataFusion.jl.git\n)\n\n\n\n\nUsage examples\n\n\nFactorization of (incompletely observed) matrix of movie ratings with side information for both users and movies:\n\n\nusing BayesianDataFusion\nusing MAT\ndata = matread(Pkg.dir(\nBayesianDataFusion\n) * \n/data/movielens_1m.mat\n)", 
             "title": "Home"
         }, 
         {
@@ -22,7 +22,7 @@
         }, 
         {
             "location": "/#usage-examples", 
-            "text": "Factorization of (incompletely observed) matrix of movie ratings with side information for both users and movies:  using BayesianDataFusion\nusing MAT", 
+            "text": "Factorization of (incompletely observed) matrix of movie ratings with side information for both users and movies:  using BayesianDataFusion\nusing MAT\ndata = matread(Pkg.dir( BayesianDataFusion ) *  /data/movielens_1m.mat )", 
             "title": "Usage examples"
         }
     ]
