@@ -26,4 +26,5 @@ Factorization of (incompletely observed) matrix of movie ratings with side infor
 ```julia
 using BayesianDataFusion
 using MAT
+data = matread(Pkg.dir("BayesianDataFusion") * "/data/movielens_1m.mat")
 ```
