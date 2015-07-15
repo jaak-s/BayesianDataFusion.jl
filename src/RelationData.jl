@@ -198,7 +198,7 @@ type RelationData
 
   RelationData() = new( Entity[], Relation[] )
 
-  function RelationData(Am::IndexedDF; feat1=zeros(0,0), feat2=zeros(0,0), entity1="compound", entity2="protein", relation="IC50", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false, lambda_beta=1.0)
+  function RelationData(Am::IndexedDF; feat1=zeros(0,0), feat2=zeros(0,0), entity1="E1", entity2="E2", relation="Rel", ntest=0, class_cut=log10(200), alpha=5.0, alpha_sample=false, lambda_beta=1.0)
     r  = alpha_sample ?Relation(Am, relation, class_cut) :Relation(Am, relation, class_cut, alpha)
     e1 = Entity{isempty(feat1) ? Any :typeof(feat1), Relation}( feat1, [r], size(r,1), entity1, lambda_beta )
     e2 = Entity{isempty(feat2) ? Any :typeof(feat2), Relation}( feat2, [r], size(r,2), entity2, lambda_beta )
