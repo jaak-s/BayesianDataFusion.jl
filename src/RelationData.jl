@@ -8,6 +8,7 @@ export Relation, numData, numTest, assignToTest!
 export Entity, toStr, normalizeFeatures!, normalizeRows!
 export EntityModel
 export load_mf1c
+export setPrecision!
 
 type EntityModel
   sample::Matrix{Float64}  ## latent vectors (each column is one instance)
@@ -171,6 +172,10 @@ end
 function assignToTest!(r::Relation, ntest::Int64)
   test_id  = sample(1:size(r.data.df,1), ntest; replace=false)
   assignToTest!(r, test_id)
+end
+
+function setPrecision!(r::Relation, precision)
+  r.model.alpha = precision
 end
 
 function assignToTest!(r::Relation, test_id::Vector{Int64})

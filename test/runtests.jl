@@ -67,6 +67,10 @@ r2 = Relation(a, "r2", [e1, e2])
 @test e2.count == size(r2, 2)
 @test size(r2) == (3,4)
 
+# testing precision setting
+setPrecision!(r2, 1.75)
+@test r2.model.alpha == 1.75
+
 a3 = DataFrame(B=[1], C=[5], v=[0.1])
 r3 = Relation(a3, "r3", [e2, e3])
 @test e3.count == 5
