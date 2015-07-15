@@ -66,7 +66,7 @@
         
             <li><a href="#installation">Installation</a></li>
         
-            <li><a href="#usage-examples">Usage examples</a></li>
+            <li><a href="#examples">Examples</a></li>
         
     
     </ul>
@@ -93,12 +93,32 @@
 <pre><code class="julia">Pkg.clone(&quot;https://github.com/jaak-s/BayesianDataFusion.jl.git&quot;)
 </code></pre>
 
-<h2 id="usage-examples">Usage examples</h2>
+<h2 id="examples">Examples</h2>
+<p>Next we give simple examples of using <strong>Macau</strong> for movie ratings prediction from MovieLens data, which is included in the BayesianDataFusion package.</p>
+<h3 id="movielens">MovieLens</h3>
 <p>Factorization of (incompletely observed) matrix of movie ratings with side information for both users and movies:</p>
 <pre><code class="julia">using BayesianDataFusion
 using MAT
-data = matread(Pkg.dir(&quot;BayesianDataFusion&quot;) * &quot;/data/movielens_1m.mat&quot;)
-</code></pre></div>
+pkgdir = Pkg.dir(&quot;BayesianDataFusion&quot;)
+data   = matread(&quot;$pkgdir/data/movielens_1m.mat&quot;)
+
+## factorize ratings X with user features from Fu and movie features from Fv
+RD = RelationData(data[&quot;X&quot;], feat1=data[&quot;Fu&quot;], feat2=data[&quot;Fv&quot;])
+
+## assign 500,000 of the observed values randomly to the test set
+assignToTest!(RD.relations[1], 500_000)
+
+## precision (inverse of variance) of the observations to 1.5.
+setPrecision!(RD.relations[1], 1.5)
+
+## view the model
+RD
+
+## run Gibbs sampler of Macau with 10 latent dimensions, total of 400 burnin and 200 posterior samples
+result = macau(RD, burnin=400, psamples=200, clamp=[1.0, 5.0], num_latent=10)
+</code></pre>
+
+<p>This model has only a single relation, accessed by <code>RD.relations[1]</code>. We use precision 1.5, which is known to be a good estimate of movie rating noise. The optional parameter <code>clamp=[1.0, 5.0]</code> thresholds the predictions to be between 1.0 and 5.0.</p></div>
             
         </div>
 
@@ -145,5 +165,5 @@ data = matread(Pkg.dir(&quot;BayesianDataFusion&quot;) * &quot;/data/movielens_1
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-07-14 15:31:45.495385
+Build Date UTC : 2015-07-15 02:14:36.550225
 -->
