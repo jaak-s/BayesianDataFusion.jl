@@ -6,7 +6,7 @@ function macau(data::RelationData;
               burnin          = 500,
               psamples        = 200,
               verbose::Bool   = true,
-              full_lambda_u   = false,
+              full_lambda_u   = true,
               reset_model     = true,
               compute_ff_size = 6500,
               latent_pids     = Int[],
