@@ -104,8 +104,7 @@ type RelationModel
   mean_value::Float64
 end
 
-RelationModel(alpha::Float64, lambda_beta::Float64=1.0) = RelationModel(false, 0.0, 1.0, lambda_beta, alpha, zeros(0), 0.0)
-RelationModel() = RelationModel(false, 2, 1.0, 1.0, NaN, zeros(0), 0.0)
+RelationModel(alpha::Float64=1.0, lambda_beta::Float64=1.0) = RelationModel(false, 2.0, 1.0, lambda_beta, alpha, zeros(0), 0.0)
 
 type RelationTemp
   linear_values::Vector{Float64} ## mean_value + F * beta
@@ -128,8 +127,7 @@ type Relation
   model::RelationModel
   temp::RelationTemp
 
-  Relation(data::IndexedDF, name::String, class_cut, alpha) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel(alpha))
-  Relation(data::IndexedDF, name::String, class_cut=0.0) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel())
+  Relation(data::IndexedDF, name::String, class_cut=0.0, alpha=1.0) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel(alpha))
   ## Relation with already setup entities
   function Relation(data::DataFrame, name::String, entities=Entity[]; class_cut=0.0,
                     dims = Int64[maximum(data[:,i]) for i in 1 : size(data,2)-1])
