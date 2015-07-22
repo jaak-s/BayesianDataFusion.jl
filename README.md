@@ -9,9 +9,5 @@ Implementation of data fusion methods.
 Pkg.clone("https://github.com/jaak-s/BayesianDataFusion.jl.git")
 ```
 
-## Example
-```julia
-using BayesianDataFusion
-x = load_mf1c(normalize_feat = true)
-result = macau(x)
-```
+## Examples
+For examples, please see [documentation](http://jaak-s.github.io/BayesianDataFusion.jl/).
