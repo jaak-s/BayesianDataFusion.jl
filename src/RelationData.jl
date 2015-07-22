@@ -105,7 +105,7 @@ type RelationModel
 end
 
 RelationModel(alpha::Float64, lambda_beta::Float64=1.0) = RelationModel(false, 0.0, 1.0, lambda_beta, alpha, zeros(0), 0.0)
-RelationModel() = RelationModel(true, 2, 1.0, 1.0, NaN, zeros(0), 0.0)
+RelationModel() = RelationModel(false, 2, 1.0, 1.0, NaN, zeros(0), 0.0)
 
 type RelationTemp
   linear_values::Vector{Float64} ## mean_value + F * beta
