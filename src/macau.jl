@@ -9,7 +9,7 @@ function macau(data::RelationData;
               full_lambda_u   = true,
               reset_model     = true,
               compute_ff_size = 6500,
-              latent_pids     = Int[],
+              latent_pids     = workers(),
               latent_blas_threads = 1,
               cg_pids         = workers(),
               full_prediction = false,
