@@ -32,3 +32,11 @@ addRelation!(rd, r)
 @test length(rd.entities)  == 2
 
 result = macau(rd, burnin=10, psamples=10, verbose=false)
+
+r2  = Relation(sprand(100, 50, 0.01), "HPO2", [Entity("genes2"), Entity("pheno2")])
+@test size(r2) == (100, 50)
+@test length(r2.entities)  == 2
+rd2 = RelationData(r2)
+@test length(rd2.relations) == 1
+@test length(rd2.entities)  == 2
+result = macau(rd2, burnin = 2, psamples = 2, verbose = false)
