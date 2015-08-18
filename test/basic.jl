@@ -67,6 +67,18 @@ r2 = Relation(a, "r2", [e1, e2])
 @test e2.count == size(r2, 2)
 @test size(r2) == (3,4)
 
+# testing setTest!
+atest = DataFrame(A=[1,2], B=[3,4], v=[0.1, -0.2])
+setTest!(r2, atest)
+@test size(r2.test_vec) == size(atest)
+@test numData(r2) == size(a, 1)
+
+# testing setTest! with SparseMatrixCSC
+atest_sp = sparse([3,2,2], [1,2,1], [-0.4, 0.6, 0.7])
+setTest!(r2, atest_sp)
+@test numTest(r2) == nnz(atest_sp)
+@test numData(r2) == size(a, 1)
+
 # testing precision setting
 setPrecision!(r2, 1.75)
 @test r2.model.alpha == 1.75

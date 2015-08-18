@@ -4,7 +4,7 @@ include("IndexedDF.jl")
 typealias SparseMatrix SparseMatrixCSC{Float64, Int64} 
 
 export RelationData, addRelation!
-export Relation, numData, numTest, assignToTest!
+export Relation, numData, numTest, assignToTest!, setTest!
 export Entity, toStr, normalizeFeatures!, normalizeRows!
 export EntityModel
 export load_mf1c
@@ -197,6 +197,44 @@ function assignToTest!(r::Relation, test_id::Vector{Int64})
     r.F      = r.F[train,:]
   end
   nothing
+end
+
+function setTest!(r::Relation, test_df::DataFrame, test_feat = false)
+  if hasFeatures(r) && test_feat == false
+    throw(ArgumentError("Relation has features, please supply features with test data:\nsetTest(rel, test_df, test_features"))
+  end
+  if hasFeatures(r) && size(r.F, 2) != size(test_feat, 2)
+    throw(ArgumentError("The test_feat must have the same number of columns as relation.F."))
+  end
+  if hasFeatures(r) && size(test_f, 1) != size(test_feat, 1)
+    throw(ArgumentError("The test_feat must have the same number of rows as test_df."))
+  end
+  if size(test_df, 2) != size(r.data.df, 2)
+    throw(ArgumentError("The number of columns in test_df must be the same as in relation.data.df."))
+  end
+  r.test_vec   = test_df
+  r.test_label = r.test_vec[:,end] .< r.class_cut
+  if hasFeatures(r)
+    r.test_F = test_feat
+  end
+end
+
+function setTest!(r::Relation, test_mat::SparseMatrixCSC)
+  if hasFeatures(r)
+    throw(ArgumentError("Cannot add test set using SparseMatrixCSC when relation has features. Use DataFrame instead."))
+  end
+  if size(r.data.df, 2) != 3
+    throw(ArgumentError("Relation must have 2 entities if using SparseMatrixCSC for test set."))
+  end
+  test_df = DataFrame()
+  tnz = findnz(test_mat)
+
+  test_df[ names(r.data.df)[1] ] = tnz[1]
+  test_df[ names(r.data.df)[2] ] = tnz[2]
+  test_df[ names(r.data.df)[3] ] = tnz[3]
+
+  r.test_vec   = test_df
+  r.test_label = r.test_vec[:,end] .< r.class_cut
 end
 
 type RelationData
