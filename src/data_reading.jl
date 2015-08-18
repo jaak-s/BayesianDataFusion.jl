@@ -3,6 +3,7 @@ export read_binary_int32, filter_rare, write_binary_int32
 export write_binary_matrix
 export read_binary_float32
 export read_sparse_float32, write_sparse_float32
+export read_matrix_market
 
 function read_ecfp(filename)
     i = 0
@@ -102,4 +103,26 @@ function write_sparse_float32(filename, rows::Vector{Int32}, cols::Vector{Int32}
     write(f, cols)
     write(f, values)
   end
+end
+
+function read_matrix_market(filename)
+  nrows = 0
+  ncols = 0
+  nnz   = 0
+  ## reading the first line
+  open(filename) do f
+    arr = split( readline(f), ' ' )
+    nrows = parse(Int, arr[1])
+    ncols = parse(Int, arr[2])
+    nnz   = parse(Int, arr[3])
+  end
+  ## reading the rest
+  raw = readdlm(filename, skipstart=1)
+  return sparse(
+    convert(Vector{Int32}, raw[:,1]),
+    convert(Vector{Int32}, raw[:,2]),
+    raw[:,3],
+    nrows,
+    ncols
+  )
 end
