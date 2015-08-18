@@ -364,6 +364,23 @@ function show(io::IO, rd::RelationData)
   end
 end
 
+function show(io::IO, r::Relation)
+  print(io, "[Relation]")
+  @printf(io, " %s: %s, #known = %d, #test = %d, α = %s", r.name, join([e.name for e in r.entities], "--"), numData(r), numTest(r), r.model.alpha_sample ?"sample" :@sprintf("%.2f", r.model.alpha))
+  hasFeatures(r) && @printf(io, ", #feat = %d", size(r.F,2))
+end
+
+function show(io::IO, en::Entity)
+  print(io, "[Entity]")
+  @printf(io, " %s: %6d ", en.name, en.count)
+  if hasFeatures(en)
+    print(io, "with ", size(en.F,2), " features (λ = ",
+              en.lambda_beta_sample ? "sample" :@sprintf("%1.1f", en.lambda_beta),")")
+  else
+    print(io, "with no features")
+  end
+end
+
 function normalizeFeatures!(entity::Entity)
   diagsq  = sqrt(vec( sum(entity.F .^ 2,1) ))
   entity.F  = entity.F * spdiagm(1.0 ./ diagsq)
