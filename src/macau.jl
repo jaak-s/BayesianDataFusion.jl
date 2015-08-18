@@ -92,7 +92,7 @@ function macau(data::RelationData;
 
       local U::Matrix{Float64}
       local uhat::Matrix{Float64}
-      nu   = num_latent
+      nu   = mj.nu0
       Tinv = mj.WI
 
       if hasFeatures(en)

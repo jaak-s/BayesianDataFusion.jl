@@ -20,6 +20,7 @@ type EntityModel
   mu0   ::Vector{Float64}  ## Hyper-prior mean for NormalWishart
   b0    ::Float64          ## Hyper-prior for NormalWishart
   WI    ::Matrix{Float64}  ## Hyper-prior for NormalWishart (inverse of W)
+  nu0   ::Float64          ## Hyper-prior for NormalWishart (degrees of freedom)
 
   EntityModel() = new()
   EntityModel(num_latent::Int, num_instances::Int) = new(
@@ -29,7 +30,8 @@ type EntityModel
     zeros(0, num_latent), ## beta
     zeros(num_latent),    ## mu0
     2.0,                  ## b0
-    eye(num_latent)       ## WI
+    eye(num_latent),      ## WI
+    num_latent            ## nu0
   )
 end
 
@@ -69,6 +71,7 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
   m.mu0    = zeros(num_latent)
   m.b0     = 2.0
   m.WI     = eye(num_latent)
+  m.nu0    = num_latent
 
   if ! isnan(lambda_beta)
     entity.lambda_beta = lambda_beta
