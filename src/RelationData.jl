@@ -217,6 +217,7 @@ function setTest!(r::Relation, test_df::DataFrame, test_feat = false)
   if hasFeatures(r)
     r.test_F = test_feat
   end
+  nothing
 end
 
 function setTest!(r::Relation, test_mat::SparseMatrixCSC)
@@ -235,6 +236,7 @@ function setTest!(r::Relation, test_mat::SparseMatrixCSC)
 
   r.test_vec   = test_df
   r.test_label = r.test_vec[:,end] .< r.class_cut
+  nothing
 end
 
 type RelationData
