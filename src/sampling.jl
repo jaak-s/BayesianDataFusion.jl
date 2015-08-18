@@ -83,18 +83,17 @@ function makeClamped(x, clamp::Vector{Float64})
   return x2
 end
 
-function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, kappa::Real, Tinv::Matrix{Float64}, nu::Real)
+function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, beta_0::Real, Tinv::Matrix{Float64}, nu::Real)
   N  = size(U, 2)
-  Ū  = mean(U, 2)
-  cU = U .- Ū
-  S  = cU * cU'
+  NU = sum(U, 2)
+  NS = U * U'
 
-  mu_c = (kappa*mu + N*Ū) / (kappa + N)
-  kappa_c = kappa + N
-  T_c = inv( Tinv + S + (kappa * N)/(kappa + N) * (mu - Ū) * (mu - Ū)' )
-  nu_c = nu + N
+  nu_N   = nu + N
+  beta_N = beta_0 + N
+  mu_N   = (beta_0*mu + NU) / (beta_0 + N)
+  T_N    = inv( Tinv + NS + beta_0 * mu * mu' - beta_N * mu_N * mu_N')
 
-  NormalWishart(vec(mu_c), kappa_c, T_c, nu_c)
+  NormalWishart(vec(mu_N), beta_N, T_N, nu_N)
 end
 
 function sample_alpha(alpha_lambda0::Float64, alpha_nu0::Float64, err::Vector{Float64})
