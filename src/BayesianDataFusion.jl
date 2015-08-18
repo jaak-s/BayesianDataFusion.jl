@@ -11,6 +11,7 @@ include("parallel_cg.jl")
 include("sampling.jl")
 include("macau.jl")
 include("macau_blocked.jl")
+include("macau_vb.jl")
 
 include("data_reading.jl")
 
