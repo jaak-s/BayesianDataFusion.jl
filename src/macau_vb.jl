@@ -17,10 +17,10 @@ end
 
 function VBModel(num_latent::Int, N::Int)
   m = VBModel(
-    randn(num_latent, N),              ## mu_u
+    0.1*randn(num_latent, N),          ## mu_u
     zeros(num_latent, num_latent, N),  ## Euu
     num_latent + N,                    ## nu_N
-    eye(num_latent, num_latent),       ## W_N
+    1/N*eye(num_latent, num_latent),   ## W_N
     zeros(num_latent),                 ## mu_N
     2.0 + N,                           ## b_N (beta)
     eye(num_latent, num_latent),       ## Winv_0
@@ -28,12 +28,13 @@ function VBModel(num_latent::Int, N::Int)
     2.0                                ## b_0
   )
   for n in 1:N
-    m.Euu[:,:,n] = eye(num_latent)
+    ## E[u u'] = inv(L_u_i) + mu_u * mu_u'
+    m.Euu[:,:,n] = inv(m.W_N) + m.mu_u[:,n] * m.mu_u[:,n]'
   end
   return m
 end
 
-function bpmf_vb(data::RelationData,
+function bpmf_vb(data::RelationData;
                  num_latent::Int = 10,
                  verbose::Bool   = true,
                  niter::Int      = 100)
@@ -43,37 +44,57 @@ function bpmf_vb(data::RelationData,
 
   ## data
   df  = data.relations[1].data.df
+  mean_value = mean(df[:,end])
   uid = convert(Vector{Int32}, df[:,1])
   vid = convert(Vector{Int32}, df[:,2])
-  val = convert(Array, df[:,3])
+  val = convert(Array, df[:,3]) - mean_value
   Udata = sparse(vid, uid, val)
   Vdata = sparse(uid, vid, val)
 
+  test_uid = convert(Array, data.relations[1].test_vec[:,1])
+  test_vid = convert(Array, data.relations[1].test_vec[:,2])
+  test_val = convert(Array, data.relations[1].test_vec[:,3])
+
   alpha = data.relations[1].model.alpha
 
-  update_u!(Umodel, Vmodel, Udata, alpha)
-  update_u!(Vmodel, Umodel, Vdata, alpha)
+  for i in 1:niter
+    update_u!(Umodel, Vmodel, Udata, alpha)
+    update_u!(Vmodel, Umodel, Vdata, alpha)
 
-  update_prior!(Umodel)
-  update_prior!(Vmodel)
+    update_prior!(Umodel)
+    update_prior!(Vmodel)
+
+    if verbose
+      yhat = predict(Umodel, Vmodel, mean_value, test_uid, test_vid)
+      rmse = sqrt( mean((yhat - test_val).^2) )
+      yhat_train = predict(Umodel, Vmodel, 0.0, uid, vid)
+      rmse_train = sqrt( mean((yhat_train - val).^2) )
+      @printf("% 3d: |U| = %.4e |V| = %.4e  RMSE=%.4f  RMSE(train)=%.4f\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train)
+    end
+  end
+  return Umodel, Vmodel
 end
 
-function update_u!(Umodel::VBModel, Vmodel::VBModel, data::SparseMatrixCSC, alpha::Float64)
-  Ex_L_U = Umodel.W_N * Umodel.nu_N
-  Ex_Lmu = Umodel.W_N * Umodel.nu_N * Umodel.mu_N
+function update_u!(Umodel::VBModel, Vmodel::VBModel, Udata::SparseMatrixCSC, alpha::Float64)
+  A = Umodel.W_N * Umodel.nu_N
+  b = Umodel.W_N * Umodel.nu_N * Umodel.mu_N
   num_latent = size(Umodel.mu_u, 1)
+  colptr = Udata.colptr
+  rowval = Udata.rowval
+  nzval  = Udata.nzval
 
   for uu in 1:size(Umodel.mu_u, 2)
-    L  = copy(Ex_L_U)
-    av = copy(Ex_Lmu)
-    for j in data.colptr[uu] : data.colptr[uu+1]-1
-      vv  = data.rowval[ j ]
+    L  = copy(A)
+    av = copy(b)
+    for j in colptr[uu] : colptr[uu+1]-1
+      vv  = rowval[ j ]
       L  += alpha * Vmodel.Euu[:, :, vv]
-      av += alpha * data.nzval[j] * Vmodel.mu_u[:, vv]
+      av += alpha * nzval[j] * Vmodel.mu_u[:, vv]
     end
     Linv = inv(L)
-    Umodel.mu_u[:, uu] = Linv * av
-    Umodel.Euu[:,:,uu] = Linv + av * av'
+    mu   = Linv * av
+    Umodel.mu_u[:, uu] = mu
+    Umodel.Euu[:,:,uu] = Linv + mu * mu'
   end
   nothing
 end
@@ -83,9 +104,15 @@ function update_prior!(m::VBModel)
 
   m.mu_N = (m.b_0 * m.mu_0 + vec(sum(m.mu_u, 2)) ) / m.b_N
 
-  m.W_N  = m.Winv_0 + reshape(sum(m.Euu, 3), num_latent, num_latent)
-  m.W_N += m.b_0 * m.mu_0 * m.mu_0' - m.b_N * m.mu_N * m.mu_N'
-  ## inverting
-  m.W_N  = inv(m.W_N)
+  m.W_N  = inv(m.Winv_0 + reshape(sum(m.Euu, 3), num_latent, num_latent)
+               + m.b_0 * m.mu_0 * m.mu_0' - m.b_N * m.mu_N * m.mu_N' )
   nothing
+end
+
+function predict(Umodel, Vmodel, mean_value, uids::Vector, vids::Vector)
+  yhat = zeros(length(uids)) + mean_value
+  for i in 1:length(uids)
+    yhat[i] += dot( Umodel.mu_u[:,uids[i]], Vmodel.mu_u[:,vids[i]] )
+  end
+  return yhat
 end
