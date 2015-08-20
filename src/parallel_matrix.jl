@@ -539,7 +539,7 @@ end
 ######## Hilbert ordering ########
 
 ## convert (x,y) to d
-function xy2d (n, x, y)
+function xy2d(n, x, y)
     local rx::Bool, ry::Bool
     d = 0::Int64
     s = div(n, 2)
