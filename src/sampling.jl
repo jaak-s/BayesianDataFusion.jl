@@ -117,7 +117,7 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
 end
 
 ## sampling latent values for sample_u in parallel
-function sample_latent_all!(sample_u::Matrix{Float64}, dataRefs::Vector{RemoteRef{Channel{Any}}}, procs::Vector{Int}, mode::Int, mean_rating::Real, sample_m::Matrix{Float64}, alpha::Float64, mu_u, Lambda_u::Matrix{Float64})
+function sample_latent_all!(sample_u::Matrix{Float64}, dataRefs::Vector, procs::Vector{Int}, mode::Int, mean_rating::Real, sample_m::Matrix{Float64}, alpha::Float64, mu_u, Lambda_u::Matrix{Float64})
   Nprocs = length(procs)
   length(dataRefs) == Nprocs || error("Number of procs ($(Nprocs)) must equal number of dataRefs($(length(dataRefs))).")
 
