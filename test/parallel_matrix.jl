@@ -61,8 +61,8 @@ ydirect = A * x
 @test_approx_eq ydirect y_e
 
 ## test error if row and col are different sizes
-@test_throws DimensionMismatch SparseBinMatrix( [rows,one(Int32)], cols)
-@test_throws DimensionMismatch ParallelSBM(     [rows,one(Int32)], cols, workers()[1:2])
+@test_throws DimensionMismatch SparseBinMatrix( [rows; one(Int32)], cols)
+@test_throws DimensionMismatch ParallelSBM(     [rows; one(Int32)], cols, workers()[1:2])
 
 ## measuring time
 ctimes = BayesianDataFusion.A_mul_B!_time(y, A, x, 3)

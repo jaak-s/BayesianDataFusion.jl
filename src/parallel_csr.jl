@@ -4,7 +4,7 @@ export SparseMatrixCSR, sparse_csr
 
 type ParallelSparseMatrix{TF}
   F::TF
-  refs::Vector{RemoteRef}
+  refs::Vector{RemoteRef{Channel{Any}}}
   procs::Vector{Int}
 end
 
