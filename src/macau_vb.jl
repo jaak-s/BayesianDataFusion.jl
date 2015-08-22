@@ -17,7 +17,7 @@ end
 
 function VBModel(num_latent::Int, N::Int)
   m = VBModel(
-    0.1*randn(num_latent, N),          ## mu_u
+    1.0*randn(num_latent, N),          ## mu_u
     zeros(num_latent, num_latent, N),  ## Euu
     num_latent + N,                    ## nu_N
     1/N*eye(num_latent, num_latent),   ## W_N
@@ -69,7 +69,7 @@ function bpmf_vb(data::RelationData;
       rmse = sqrt( mean((yhat - test_val).^2) )
       yhat_train = predict(Umodel, Vmodel, 0.0, uid, vid)
       rmse_train = sqrt( mean((yhat_train - val).^2) )
-      @printf("% 3d: |U| = %.4e |V| = %.4e  RMSE=%.4f  RMSE(train)=%.4f\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train)
+      @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f  RMSE(train)=%.4f\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train)
     end
   end
   return Umodel, Vmodel
