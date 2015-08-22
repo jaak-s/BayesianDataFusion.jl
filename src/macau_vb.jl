@@ -81,7 +81,8 @@ function bpmf_vb(data::RelationData;
     "Umodel" => Umodel,
     "Vmodel" => Vmodel,
     "rmse"   => rmse,
-    "rmse_train" => rmse_train)
+    "rmse_train" => rmse_train,
+    "alpha"  => alpha)
 end
 
 function update_u!(Umodel::VBModel, Vmodel::VBModel, Udata::SparseMatrixCSC, alpha::Float64)
