@@ -83,6 +83,14 @@ function makeClamped(x, clamp::Vector{Float64})
   return x2
 end
 
+function clamp!(x, clamp::Vector{Float64})
+  if ! isempty(clamp)
+    x[x .< clamp[1]] = clamp[1]
+    x[x .> clamp[2]] = clamp[2]
+  end
+  return x
+end
+
 function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, beta_0::Real, Tinv::Matrix{Float64}, nu::Real)
   N  = size(U, 2)
   NU = sum(U, 2)
@@ -117,7 +125,7 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
 end
 
 ## sampling latent values for sample_u in parallel
-function sample_latent_all!(sample_u::Matrix{Float64}, dataRefs::Vector{RemoteRef}, procs::Vector{Int}, mode::Int, mean_rating::Real, sample_m::Matrix{Float64}, alpha::Float64, mu_u, Lambda_u::Matrix{Float64})
+function sample_latent_all!(sample_u::Matrix{Float64}, dataRefs::Vector, procs::Vector{Int}, mode::Int, mean_rating::Real, sample_m::Matrix{Float64}, alpha::Float64, mu_u, Lambda_u::Matrix{Float64})
   Nprocs = length(procs)
   length(dataRefs) == Nprocs || error("Number of procs ($(Nprocs)) must equal number of dataRefs($(length(dataRefs))).")
 

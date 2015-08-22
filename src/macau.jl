@@ -63,6 +63,7 @@ function macau(data::RelationData;
   err_avg  = 0.0
   roc_avg  = 0.0
   rmse_avg = 0.0
+  counter_prob = 1
 
   local probe_rat_all, clamped_rat_all
   local probe_stdev::Vector{Float64}
@@ -142,7 +143,6 @@ function macau(data::RelationData;
     if full_prediction && i > burnin
       yhat_full += pred_all( data.relations[1] )
     end
-
 
     if i > burnin
       if length(output) > 0

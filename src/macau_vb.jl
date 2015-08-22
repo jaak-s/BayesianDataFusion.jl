@@ -1,6 +1,8 @@
 export bpmf_vb
 export VBModel
 
+using Compat
+
 type VBModel
   mu_u::Matrix{Float64}    ## means of u_i
   Euu ::Array{Float64, 3}  ## storing E[u u'] = Lambda_u^{-1} + mu_u mu_u'
@@ -37,8 +39,11 @@ end
 function bpmf_vb(data::RelationData;
                  num_latent::Int = 10,
                  verbose::Bool   = true,
-                 niter::Int      = 100)
+                 niter::Int      = 100,
+                 clamp::Vector{Float64} = Float64[])
   ## initialization
+  rmse = NaN
+  rmse_train = NaN
   Umodel = VBModel(num_latent, data.entities[1].count)
   Vmodel = VBModel(num_latent, data.entities[2].count)
 
@@ -65,14 +70,18 @@ function bpmf_vb(data::RelationData;
     update_prior!(Vmodel)
 
     if verbose
-      yhat = predict(Umodel, Vmodel, mean_value, test_uid, test_vid)
+      yhat = clamp!(predict(Umodel, Vmodel, mean_value, test_uid, test_vid), clamp)
       rmse = sqrt( mean((yhat - test_val).^2) )
-      yhat_train = predict(Umodel, Vmodel, 0.0, uid, vid)
-      rmse_train = sqrt( mean((yhat_train - val).^2) )
+      yhat_train = clamp!(predict(Umodel, Vmodel, mean_value, uid, vid), clamp)
+      rmse_train = sqrt( mean((yhat_train - mean_value - val).^2) )
       @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f  RMSE(train)=%.4f\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train)
     end
   end
-  return Umodel, Vmodel
+  return @compat Dict(
+    "Umodel" => Umodel,
+    "Vmodel" => Vmodel,
+    "rmse"   => rmse,
+    "rmse_train" => rmse_train)
 end
 
 function update_u!(Umodel::VBModel, Vmodel::VBModel, Udata::SparseMatrixCSC, alpha::Float64)
@@ -115,4 +124,9 @@ function predict(Umodel, Vmodel, mean_value, uids::Vector, vids::Vector)
     yhat[i] += dot( Umodel.mu_u[:,uids[i]], Vmodel.mu_u[:,vids[i]] )
   end
   return yhat
+end
+
+import Base.show
+function show(io::IO, m::VBModel)
+  @printf(io, "VBModel of %d instances: |mu_u|=%0.3e", size(m.mu_u, 2), vecnorm(m.mu_u))
 end
