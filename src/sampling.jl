@@ -314,3 +314,14 @@ function update_latent_prior!(en::Entity, full_lambda_u::Bool)
   mj.mu, mj.Lambda = rand( ConditionalNormalWishart(U, mj.mu0, mj.b0, Tinv, nu) )
   return nothing
 end
+
+function update_beta!(en::Entity, tol::Float64)
+  if ! hasFeatures( en )
+    return nothing
+  end
+  mj = en.model
+  mj.beta, rhs = sample_beta(en, mj.sample .- mj.mu, mj.Lambda, en.lambda_beta, en.use_FF, tol)
+  if en.lambda_beta_sample
+    en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
+  end
+end

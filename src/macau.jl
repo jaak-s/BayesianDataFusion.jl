@@ -113,14 +113,10 @@ function macau(data::RelationData;
           sample_user2_all!(data.entities[j], modes[j], modes_other[j])
         end
       end
+    end
 
-      if hasFeatures( data.entities[j] )
-        use_ff = size(data.entities[j].F, 2) <= compute_ff_size
-        mj.beta, rhs = sample_beta(data.entities[j], mj.sample .- mj.mu, mj.Lambda, data.entities[j].lambda_beta, use_ff, tol)
-        if en.lambda_beta_sample
-          en.lambda_beta = sample_lambda_beta(mj.beta, mj.Lambda, en.nu, en.mu)
-        end
-      end
+    for en in data.entities
+      update_beta!(en, tol)
     end
 
     rel = data.relations[1]

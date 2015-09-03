@@ -41,6 +41,7 @@ end
 type Entity{FT,R}
   F::FT
   FF
+  use_FF::Bool
   Frefs::Vector{RemoteRef}
   relations::Vector{R}
   count::Int64
@@ -52,7 +53,7 @@ type Entity{FT,R}
   nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1.0) = new(F, zeros(0,0), RemoteRef[], relations, count, name, lb, lb_sample, mu, nu)
+  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1.0) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, lb, lb_sample, mu, nu)
 end
 
 Entity(name::String; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
@@ -316,11 +317,13 @@ function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size
   for en in data.entities
     initModel!(en, num_latent, lambda_beta = lambda_beta)
     if hasFeatures(en)
-      if size(en.F,2) <= compute_ff_size
+      if size(en.F, 2) <= compute_ff_size
         en.FF = full(At_mul_B(en.F, en.F))
+        en.use_FF = true
       else
         ## setup CG on julia threads
         init_Frefs!(en, num_latent, cg_pids)
+        en.use_FF = false
       end
     end
   end
