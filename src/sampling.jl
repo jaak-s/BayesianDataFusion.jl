@@ -291,3 +291,26 @@ function sample_beta_rel(r::Relation)
     error("conjugate gradient unimplemented for sampling relation beta")
   end
 end
+
+function update_latent_prior!(en::Entity, full_lambda_u::Bool)
+  mj = en.model
+
+  local U::Matrix{Float64}
+  local uhat::Matrix{Float64}
+  nu   = mj.nu0
+  Tinv = mj.WI
+
+  if hasFeatures(en)
+    mj.uhat = F_mul_beta(en)'
+    U = mj.sample - mj.uhat
+    if full_lambda_u
+      nu   += size(mj.beta, 1)
+      Tinv += mj.beta' * mj.beta * en.lambda_beta
+    end
+  else
+    U = mj.sample
+  end
+
+  mj.mu, mj.Lambda = rand( ConditionalNormalWishart(U, mj.mu0, mj.b0, Tinv, nu) )
+  return nothing
+end

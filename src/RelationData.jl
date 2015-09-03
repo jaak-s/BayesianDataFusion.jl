@@ -22,6 +22,8 @@ type EntityModel
   WI    ::Matrix{Float64}  ## Hyper-prior for NormalWishart (inverse of W)
   nu0   ::Float64          ## Hyper-prior for NormalWishart (degrees of freedom)
 
+  uhat  ::Matrix{Float64}  ## temporary variable storing uhat (beta * feat)
+
   EntityModel() = new()
   EntityModel(num_latent::Int, num_instances::Int) = new(
     zeros(num_latent, num_instances), ## sample
@@ -31,7 +33,8 @@ type EntityModel
     zeros(num_latent),    ## mu0
     2.0,                  ## b0
     eye(num_latent),      ## WI
-    num_latent            ## nu0
+    num_latent,           ## nu0
+    zeros(0,0)            ## uhat
   )
 end
 

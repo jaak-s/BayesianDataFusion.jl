@@ -86,34 +86,20 @@ function macau(data::RelationData;
       end
     end
 
+    for en in data.entities
+      update_latent_prior!(en, full_lambda_u)
+    end
+
     # Sample from entity hyperparams
     for j in 1:length(data.entities)
       en = data.entities[j]
       mj = en.model
 
-      local U::Matrix{Float64}
-      local uhat::Matrix{Float64}
-      nu   = mj.nu0
-      Tinv = mj.WI
-
-      if hasFeatures(en)
-        uhat = F_mul_beta(en)'
-        U = mj.sample - uhat
-        if full_lambda_u
-          nu   += size(mj.beta, 1)
-          Tinv += mj.beta' * mj.beta * en.lambda_beta
-        end
-      else
-        U = mj.sample
-      end
-
-      mj.mu, mj.Lambda = rand( ConditionalNormalWishart(U, mj.mu0, mj.b0, Tinv, nu) )
-
       # latent vectors
       if latent_multi_threading
         sample_v = data.entities[j == 1 ? 2 : 1].model.sample
         if hasFeatures(en)
-          mu_matrix = mj.mu .+ uhat
+          mu_matrix = mj.mu .+ mj.uhat
           sample_latent_all!(mj.sample, latent_data_refs, latent_pids, modes[j][1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mu_matrix, mj.Lambda)
         else
           sample_latent_all!(mj.sample, latent_data_refs, latent_pids, modes[j][1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mj.mu, mj.Lambda)
@@ -121,7 +107,7 @@ function macau(data::RelationData;
       else
         ## single thread
         if hasFeatures(en)
-          mu_matrix = mj.mu .+ uhat
+          mu_matrix = mj.mu .+ mj.uhat
           sample_user2_all!(data.entities[j], mu_matrix, modes[j], modes_other[j])
         else
           sample_user2_all!(data.entities[j], modes[j], modes_other[j])
