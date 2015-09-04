@@ -86,10 +86,6 @@ function macau(data::RelationData;
       end
     end
 
-    for en in data.entities
-      update_latent_prior!(en, full_lambda_u)
-    end
-
     # Sample from entity hyperparams
     for j in 1:length(data.entities)
       en = data.entities[j]
@@ -113,6 +109,10 @@ function macau(data::RelationData;
           sample_user2_all!(data.entities[j], modes[j], modes_other[j])
         end
       end
+    end
+
+    for en in data.entities
+      update_latent_prior!(en, full_lambda_u)
     end
 
     for en in data.entities

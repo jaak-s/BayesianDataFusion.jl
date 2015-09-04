@@ -68,6 +68,7 @@ function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = Na
   m.Lambda = eye(num_latent)
   if hasFeatures(entity)
     m.beta = zeros( size(entity.F, 2), num_latent )
+    m.uhat = zeros(num_latent, entity.count)
   else
     m.beta = zeros( 0, num_latent )
   end
