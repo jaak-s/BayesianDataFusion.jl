@@ -69,11 +69,12 @@ function bpmf_vb(data::RelationData;
     update_prior!(Umodel)
     update_prior!(Vmodel)
 
+    yhat = clamp!(predict(Umodel, Vmodel, mean_value, test_uid, test_vid), clamp)
+    rmse = sqrt( mean((yhat - test_val).^2) )
+    yhat_train = clamp!(predict(Umodel, Vmodel, mean_value, uid, vid), clamp)
+    rmse_train = sqrt( mean((yhat_train - mean_value - val).^2) )
+
     if verbose
-      yhat = clamp!(predict(Umodel, Vmodel, mean_value, test_uid, test_vid), clamp)
-      rmse = sqrt( mean((yhat - test_val).^2) )
-      yhat_train = clamp!(predict(Umodel, Vmodel, mean_value, uid, vid), clamp)
-      rmse_train = sqrt( mean((yhat_train - mean_value - val).^2) )
       @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f  RMSE(train)=%.4f\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train)
     end
   end
