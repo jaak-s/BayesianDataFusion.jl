@@ -296,7 +296,6 @@ function update_latent_prior!(en::Entity, full_lambda_u::Bool)
   mj = en.model
 
   local U::Matrix{Float64}
-  local uhat::Matrix{Float64}
   nu   = mj.nu0
   Tinv = mj.WI
 
