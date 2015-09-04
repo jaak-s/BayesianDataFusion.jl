@@ -47,13 +47,16 @@ type Entity{FT,R}
   count::Int64
   name::String
 
+  modes::Vector{Int}
+  modes_other::Vector{Vector{Int}}
+
   lambda_beta::Float64
   lambda_beta_sample::Bool
   mu::Float64   ## Hyper-prior for lambda_beta
   nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1.0) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, lb, lb_sample, mu, nu)
+  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1.0) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
 end
 
 Entity(name::String; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
@@ -316,6 +319,8 @@ end
 function reset!(data::RelationData, num_latent; lambda_beta=NaN, compute_ff_size = 6500, cg_pids=Int[myid()])
   for en in data.entities
     initModel!(en, num_latent, lambda_beta = lambda_beta)
+    en.modes = Int64[ find(en2 -> en2 == en, r.entities)[1] for r in en.relations ]
+    en.modes_other = Vector{Int64}[ find(en2 -> en2 != en, r.entities) for r in en.relations ]
     if hasFeatures(en)
       if size(en.F, 2) <= compute_ff_size
         en.FF = full(At_mul_B(en.F, en.F))
