@@ -12,6 +12,7 @@ include("sampling.jl")
 include("macau.jl")
 include("macau_blocked.jl")
 include("macau_vb.jl")
+include("macau_hmc.jl")
 
 include("data_reading.jl")
 

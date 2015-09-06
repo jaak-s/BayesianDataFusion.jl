@@ -53,8 +53,8 @@ function bpmf_vb(data::RelationData;
   uid = convert(Vector{Int32}, df[:,1])
   vid = convert(Vector{Int32}, df[:,2])
   val = convert(Array, df[:,3]) - mean_value
-  Udata = sparse(vid, uid, val)
-  Vdata = sparse(uid, vid, val)
+  Udata = sparse(vid, uid, val, data.entities[2].count, data.entities[1].count)
+  Vdata = Udata'
 
   test_uid = convert(Array, data.relations[1].test_vec[:,1])
   test_vid = convert(Array, data.relations[1].test_vec[:,2])

@@ -22,7 +22,6 @@ function macau(data::RelationData;
   local yhat_full
 
   verbose && println("Model setup")
-
   if reset_model
     reset!(data, num_latent, lambda_beta = lambda_beta, compute_ff_size = compute_ff_size, cg_pids=cg_pids)
   end
@@ -176,9 +175,9 @@ function macau(data::RelationData;
       estr = join(map(en -> toStr(en), data.entities), " ")
       rstr = join(map(r  -> toStr(r),  data.relations), " ")
       if i <= burnin
-        verbose && @printf("%3d: Acc=%6.4f ROC=%6.4f RMSE=%6.4f | %s | %s [%1.0fs]\n", i, err, roc_avg, rmse_avg, estr, rstr, time1 - time0)
+        verbose && @printf("%3d: ROC=%6.4f RMSE=%6.4f | %s | %s [%1.1fs]\n", i, roc_avg, rmse_avg, estr, rstr, time1 - time0)
       else
-        verbose && @printf("%3d: Acc=%6.4f ROC=%6.4f RMSE=%6.4f | %s | %s [%1.0fs]\n", i, err_avg, roc_avg, rmse_avg, estr, rstr, time1 - time0)
+        verbose && @printf("%3d: ROC=%6.4f RMSE=%6.4f | %s | %s [%1.1fs]\n", i, roc_avg, rmse_avg, estr, rstr, time1 - time0)
       end
     end
   end

@@ -4,7 +4,8 @@ using Distributions
 export pred, pred_all
 export solve_full
 
-function pred(r::Relation, probe_vec::DataFrame, F)
+## supports probe_vec of DataFrame or Matrix{Integer}
+function pred(r::Relation, probe_vec, F)
   if ! hasFeatures(r)
     return udot(r, probe_vec) + r.model.mean_value
   end
@@ -25,7 +26,7 @@ function udot(r::Relation, probe_vec::DataFrame)
 end
 
 ## faster udot (about 2x) for matrices 
-function udot(r::Relation, probe_vec::Matrix{Integer})
+function udot(r::Relation, probe_vec::Matrix)
   if length(size(r)) == 2
     ## special code for matrix
     num_latent = size(r.entities[1].model.sample, 1)

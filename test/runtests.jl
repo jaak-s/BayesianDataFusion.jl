@@ -9,3 +9,5 @@ include("solver.jl")
 include("sparse_csr.jl")
 include("sparsebin_csr.jl")
 include("parallel_latent_basic.jl")
+
+include("macau_hmc.jl")
