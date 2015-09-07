@@ -4,13 +4,15 @@ using Compat
 
 type HMCModel
   momentum::Matrix{Float64}
+  G       ::Matrix{Float64} ## diagonal mass matrix
 end
 
 deepcopy(m::HMCModel) = HMCModel(copy(m.momentum))
 
-function HMCModel(num_latent::Int, N::Int)
+function HMCModel(num_latent::Int, N::Int, Ldiag::Vector{Float64})
   return HMCModel(
-    zeros(num_latent, N)  ## momentum
+    zeros(num_latent, N),  ## momentum
+    repmat(Ldiag, 1, N)    ## mass matrix (G)
   )
 end
 
@@ -26,13 +28,15 @@ function macau_hmc(data::RelationData;
                    reset_model     = true,
                    clamp::Vector{Float64} = Float64[])
   ## initialization
-  rmse = NaN
-  rmse_train = NaN
-  Umodel = HMCModel(num_latent, data.entities[1].count)
-  Vmodel = HMCModel(num_latent, data.entities[2].count)
-
   verbose     && println("Model setup")
   reset_model && reset!(data, num_latent)
+
+  rmse = NaN
+  rmse_sample = NaN
+  rmse_train  = NaN
+  Umodel = HMCModel(num_latent, data.entities[1].count, diag(data.entities[1].model.Lambda))
+  Vmodel = HMCModel(num_latent, data.entities[2].count, diag(data.entities[2].model.Lambda))
+
 
   ## data
   df  = data.relations[1].data.df
@@ -149,14 +153,14 @@ end
 function sample!(m::HMCModel)
   ## sampling from Normal distribution with identity cov
   for i = 1:size(m.momentum,1), j = 1:size(m.momentum,2)
-    m.momentum[i,j] = randn() * 0.1
+    m.momentum[i,j] = randn() / sqrt(m.G[i,j])
   end
   nothing
 end
 
 
-function hmc_update_u!(Umodel::HMCModel,
-                       VModel::HMCModel,
+function hmc_update_u!(U_hmcmodel::HMCModel,
+                       V_hmcModel::HMCModel,
                        Udata,
                        alpha::Float64,
                        en::Entity,
@@ -167,8 +171,8 @@ function hmc_update_u!(Umodel::HMCModel,
   model      = en.model
   sample     = model.sample
   Vsample    = enV.model.sample
-  momentum   = Umodel.momentum
-  num_latent = size(Umodel.momentum, 1)
+  momentum   = U_hmcmodel.momentum
+  num_latent = size(U_hmcmodel.momentum, 1)
 
   # 1) make half step in momentum
   subtract_grad!(momentum, model, sample, Vsample, Udata, alpha, eps / 2)
@@ -202,12 +206,8 @@ function subtract_grad!(momentum::Matrix{Float64},
                         Udata   ::SparseMatrixCSC,
                         alpha   ::Float64,
                         eps     ::Float64)
-  colptr = Udata.colptr
-  rowval = Udata.rowval
-  nzval  = Udata.nzval
-
   num_latent = size(momentum, 1)
-  # 1) make half step in momentum
+
   for n in 1:size(sample, 2)
     tmp = grad(n, sample, Vsample, Udata, model.Lambda, model.mu, alpha)
     @inbounds for k in 1:num_latent
@@ -217,30 +217,6 @@ function subtract_grad!(momentum::Matrix{Float64},
   nothing
 end
 
-function subtract_grad2!(momentum::Matrix{Float64},
-                         model   ::EntityModel,
-                         sample  ::Matrix{Float64},
-                         Vsample ::Matrix{Float64},
-                         Udata   ::SparseMatrixCSC,
-                         alpha   ::Float64,
-                         eps     ::Float64)
-  colptr = Udata.colptr
-  rowval = Udata.rowval
-  nzval  = Udata.nzval
-
-  for n in 1:size(sample, 2)
-    un  = sample[:,n]
-    tmp = - model.Lambda * (model.mu - un)
-    for j in colptr[n] : colptr[n+1]-1
-      vm = Vsample[:, rowval[j] ]
-      tmp += - alpha * (nzval[j] - dot(vm, un)) * vm
-    end
-    @inbounds for d in 1:size(momentum, 1)
-      momentum[d,n] -= eps * tmp[d]
-    end
-  end
-  nothing
-end
 
 function grad(n,
               sample  ::Matrix{Float64},
@@ -255,11 +231,22 @@ function grad(n,
   rr  = Udata.nzval[ idx ]
 
   MM = Vsample[:, ff]
+  ## add d/du A(r_V | U)
+  ## add d/du 1/2 log|G_V|
 
   return - alpha * (MM * rr - (MM*MM') * un) - Lambda * (mu - un)
 end
 
-computeKinetic(m::HMCModel) = 0.5 * vecnorm(m.momentum)^2
+function computeKinetic(m::HMCModel)
+  kin = 0.0
+  momentum = m.momentum
+  G        = m.G
+  ## r'*G*r + log|G|
+  @inbounds @simd for i = 1:length(momentum)
+    kin += momentum[i] * momentum[i] * G[i] + log(G[i])
+  end
+  return 0.5 * kin
+end
 
 ## computes - log [p(Y | U,V) p(U, V)]
 function computePotential(uid::Vector, vid::Vector, val::Vector, r::Relation)
