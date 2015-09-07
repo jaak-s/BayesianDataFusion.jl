@@ -49,14 +49,17 @@ function macau_hmc(data::RelationData;
   test_idx = hcat(test_uid, test_vid)
 
   alpha = data.relations[1].model.alpha
-
-  local test_hat, testcl_all
+  yhat_post = zeros(length(test_val))
 
   for i in 1 : burnin + psamples
     time0 = time()
-    in_burnin = i <= burnin
+
+    if i == burnin + 1
+      verbose && print("================== Burnin complete ===================\n")
+    end
 
     verbose && @printf("======= Step %d =======\n", i)
+    verbose && @printf("eps = %.2e\n", eps)
 
     # HMC sampling momentum
     sample!(Umodel)
@@ -95,6 +98,15 @@ function macau_hmc(data::RelationData;
       verbose && print("-> REJECTED!\n")
       Base.copy!(data.entities[1].model.sample, Ustart)
       Base.copy!(data.entities[2].model.sample, Vstart)
+      if dH < -6
+        ## decreasing eps by 2
+        neweps = eps / 2
+        newL   = ceil(Int, L*1.6)
+        verbose && @printf("Reducing eps from %.2e to %.2e.\n", eps, neweps)
+        verbose && @printf("Increasing L from %d to %d.\n", L, newL)
+        eps = neweps
+        L   = newL
+      end
     end
 
     # Sampling prior for latents
@@ -106,18 +118,24 @@ function macau_hmc(data::RelationData;
     end
 
     rel  = data.relations[1]
-    yhat = clamp!(pred(rel, test_idx, rel.test_F), clamp)
+    yhat_raw = pred(rel, test_idx, rel.test_F)
+    yhat     = clamp!(yhat_raw, clamp)
+    update_yhat_post!(yhat_post, yhat_raw, i, burnin)
+
     rmse = sqrt( mean((yhat - test_val).^2) )
+    rmse_post = sqrt( mean((makeClamped(yhat_post, clamp) - test_val).^2) )
     #yhat_train = clamp!(pred(Umodel, Vmodel, mean_value, uid, vid), clamp)
     #rmse_train = sqrt( mean((yhat_train - mean_value - val).^2) )
     time1 = time()
 
+
     if verbose
-      @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f [took %.2fs]\n",
+      @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f  RMSE(avg)=%.4f [took %.2fs]\n",
         i,
         vecnorm(data.entities[1].model.sample),
         vecnorm(data.entities[2].model.sample),
         rmse,
+        rmse_post,
         time1 - time0)
     end
   end
@@ -279,4 +297,17 @@ function column_dot(X, Y, i, j)
     d += X[k,i] * Y[k,j]
   end
   return d
+end
+
+function update_yhat_post!(yhat_post, yhat_raw, i, burnin)
+  ## also takes care of the first sample of posterior
+  if i <= burnin + 1
+    Base.copy!(yhat_post, yhat_raw)
+    return yhat_post
+  end
+
+  ## averaging
+  n = i - burnin - 1
+  Base.copy!(yhat_post, (n*yhat_post + yhat_raw) / (n + 1))
+  return yhat_post
 end
