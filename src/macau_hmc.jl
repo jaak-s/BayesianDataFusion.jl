@@ -193,8 +193,8 @@ end
 ## computes X += mult * Y
 function add!(X::Matrix, Y::Matrix, mult::Float64)
   size(X) == size(Y) || error("X and Y must have the same size.")
-  @inbounds for j in 1:size(X, 2), i in 1:size(X, 1)
-    X[i,j] += mult * Y[i,j]
+  @inbounds @simd for i in 1:length(X)
+    X[i] += mult * Y[i]
   end
   nothing
 end

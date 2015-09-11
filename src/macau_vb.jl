@@ -63,6 +63,7 @@ function bpmf_vb(data::RelationData;
   alpha = data.relations[1].model.alpha
 
   for i in 1:niter
+    time0 = time()
     update_u!(Umodel, Vmodel, Udata, alpha)
     update_u!(Vmodel, Umodel, Vdata, alpha)
 
@@ -74,8 +75,10 @@ function bpmf_vb(data::RelationData;
     yhat_train = clamp!(predict(Umodel, Vmodel, mean_value, uid, vid), clamp)
     rmse_train = sqrt( mean((yhat_train - mean_value - val).^2) )
 
+    time1 = time()
+
     if verbose
-      @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f  RMSE(train)=%.4f\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train)
+      @printf("% 3d: |U|=%.4e  |V|=%.4e  RMSE=%.4f  RMSE(train)=%.4f  [took %.2fs]\n", i, vecnorm(Umodel.mu_u), vecnorm(Vmodel.mu_u), rmse, rmse_train, time1 - time0)
     end
   end
   return @compat Dict(
@@ -84,6 +87,17 @@ function bpmf_vb(data::RelationData;
     "rmse"   => rmse,
     "rmse_train" => rmse_train,
     "alpha"  => alpha)
+end
+
+function add!(X::Matrix, Y::Array, dim::Integer, mult::Float64)
+  size(X,1) == size(Y,1) || error("X and Y must have the same size in first dimension.")
+  size(X,2) == size(Y,2) || error("X and Y must have the same size in second dimension.")
+  @inbounds for j in 1:size(X, 2)
+    @simd for i in 1:size(X, 1)
+      X[i,j] += mult * Y[i,j,dim]
+    end
+  end
+  nothing
 end
 
 function update_u!(Umodel::VBModel, Vmodel::VBModel, Udata::SparseMatrixCSC, alpha::Float64)
@@ -95,15 +109,20 @@ function update_u!(Umodel::VBModel, Vmodel::VBModel, Udata::SparseMatrixCSC, alp
   nzval  = Udata.nzval
 
   for uu in 1:size(Umodel.mu_u, 2)
+    idx = colptr[uu] : colptr[uu+1]-1
+    ff  = rowval[ idx ]
+    rr  = nzval[ idx ]
+
     L  = copy(A)
-    av = copy(b)
-    for j in colptr[uu] : colptr[uu+1]-1
-      vv  = rowval[ j ]
-      L  += alpha * Vmodel.Euu[:, :, vv]
-      av += alpha * nzval[j] * Vmodel.mu_u[:, vv]
+    for vv in ff
+      #L += alpha * Vmodel.Euu[:, :, vv]
+      add!(L, Vmodel.Euu, vv, alpha)
     end
     Linv = inv(L)
-    mu   = Linv * av
+
+    MM = Vmodel.mu_u[:, ff]
+    mu = Linv * (b + alpha * MM * rr)
+
     Umodel.mu_u[:, uu] = mu
     Umodel.Euu[:,:,uu] = Linv + mu * mu'
   end
