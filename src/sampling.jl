@@ -49,6 +49,24 @@ function udot(r::Relation, probe_vec::Matrix)
   return vec(sum(U, 1))
 end
 
+function udot2(uid::Vector, vid::Vector, U::Matrix, V::Matrix)
+  size(U,1)   == size(V,1) || error("U and V must have the same number of rows.")
+  length(uid) == length(vid) || error("uid and vid must have the same length.")
+
+  num_latent = size(U,1)
+  result     = zeros(eltype(U), length(uid))
+  @inbounds for i = 1:length(uid)
+    uu = uid[i]
+    vv = vid[i]
+    tmp = 0.0
+    @inbounds @simd for k = 1:num_latent
+      tmp += U[k,uu] * V[k,vv]
+    end
+    result[i] = tmp
+  end
+  return result
+end
+
 ## computes predictions sum(u1 .* u2 .* ... .* uR, 2) for all points in relation r
 function udot_all(r::Relation)
   ## matrix version:
