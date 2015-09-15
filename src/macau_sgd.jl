@@ -85,6 +85,31 @@ function grad!(n,
   nothing
 end
 
+function grad_yhat(
+              U       ::Matrix{Float64},
+              V       ::Matrix{Float64},
+              colptr  ::Vector,
+              rowval  ::Vector,
+              #nzval   ::Vector,
+              resid   ::Vector,
+              Lambda  ::Matrix{Float64},
+              mu      ::Vector{Float64},
+              alpha   ::Float64)
+  num_latent = size(U, 1)
+  grad = Lambda * (mu .- U)
+  @inbounds for n in 1:size(U,2)
+    @inbounds for i in colptr[n] : colptr[n+1]-1
+      err_i = alpha * resid[i]
+      v_i   = rowval[i]
+      @inbounds @simd for k in 1:num_latent
+        grad[k,n] += err_i * V[k, v_i]
+      end
+    end
+  end
+
+  return grad
+end
+
 function grad_yhat!(
               grad    ::Matrix{Float64},
               U       ::Matrix{Float64},
@@ -93,22 +118,24 @@ function grad_yhat!(
               rowval  ::Vector,
               #nzval   ::Vector,
               resid   ::Vector,
-              #Lambda  ::Matrix{Float64},
-              #mu      ::Vector{Float64},
+              lambda  ::Vector{Float64},
+              mu      ::Vector{Float64},
               alpha   ::Float64)
   num_latent = size(U, 1)
   @inbounds for n in 1:size(U,2)
-    idx = colptr[n] : colptr[n+1]-1
-    ff  = rowval[ idx ]
-    err = alpha * resid[ idx ]
-    @inbounds for i in 1:length(err)
-      err_i = err[i]
-      v_i   = ff[i]
+    @inbounds @simd for k in 1:num_latent
+      grad[n, k] = (U[n, k] - mu[k]) * lambda[k]
+    end
+  end
+  @inbounds for n in 1:size(U,2)
+    @inbounds for i in colptr[n] : colptr[n+1]-1
+      err_i = alpha * resid[i]
+      v_i   = rowval[i]
       @inbounds @simd for k in 1:num_latent
-        grad[k,n] = err_i * V[k, v_i]
+        grad[k,n] += err_i * V[k, v_i]
       end
     end
   end
 
-  nothing
+  return grad
 end
