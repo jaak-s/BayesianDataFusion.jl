@@ -62,11 +62,9 @@
     
         <li class="main active"><a href="#bayesiandatafusionjl-package">BayesianDataFusion.jl package</a></li>
         
-    
-        <li class="main "><a href="#features">Features</a></li>
+            <li><a href="#features">Features</a></li>
         
-    
-        <li class="main "><a href="#installation">Installation</a></li>
+            <li><a href="#installation">Installation</a></li>
         
     
         <li class="main "><a href="#examples">Examples</a></li>
@@ -76,13 +74,20 @@
             <li><a href="#movielens-wo-side-information">MovieLens w/o side-information</a></li>
         
     
+        <li class="main "><a href="#saving-latent-vectors">Saving latent vectors</a></li>
+        
+            <li><a href="#reading-latent-matrix-files">Reading latent matrix files</a></li>
+        
+            <li><a href="#saving-link-matrix-beta">Saving link matrix (beta)</a></li>
+        
+    
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
 <h1 id="bayesiandatafusionjl-package">BayesianDataFusion.jl package</h1>
 <p>This gives reference and examples for <a href="https://github.com/jaak-s/BayesianDataFusion.jl">BayesianDataFusion.jl</a>.</p>
-<h1 id="features">Features</h1>
+<h2 id="features">Features</h2>
 <p><code>BayesianDataFusion.jl</code> provides parallel and highly optimized implementation for</p>
 <ul>
 <li>Bayesian Probabilistic Matrix Factorization (BPMF)</li>
@@ -94,8 +99,9 @@
 <li>use of <strong>entity side information</strong> to improve factorization (e.g, user and/or movie features for factorizing movie ratings)</li>
 <li>use of <strong>relation side information</strong> to improve factorization  (e.g., data about when user went to see particular movie)</li>
 <li>factorization of <strong>several</strong> matrices (and tensors) for an entity simultaneously.</li>
+<li>Macau can handle high dimensional side-information, e.g., 1,000,000-dimensional user features.</li>
 </ul>
-<h1 id="installation">Installation</h1>
+<h2 id="installation">Installation</h2>
 <p>Inside Julia:</p>
 <pre><code class="julia">Pkg.clone(&quot;https://github.com/jaak-s/BayesianDataFusion.jl.git&quot;)
 </code></pre>
@@ -178,7 +184,27 @@ RD = RelationData(ratings)
 result = macau(RD, burnin=400, psamples=200, clamp=[1.0, 5.0], num_latent=10)
 </code></pre>
 
-<p>In most applications the performance of pure BPMF is weaker compared to Macau. This is also true in the case of MovieLens dataset.</p></div>
+<p>In most applications the performance of pure BPMF is weaker compared to Macau. This is also true in the case of MovieLens dataset.</p>
+<h1 id="saving-latent-vectors">Saving latent vectors</h1>
+<p>To save the sampled latent variables to disk macau has <code>output</code> parameter. If it is set to non-empty string <code>macau</code> saves all posterior latent variable matrices and uses the <code>output</code> value as a prefix for the file names. The prefix can also include the path, for example</p>
+<pre><code>result = macau(RD, output = &quot;/home/user/mylatent&quot;)
+</code></pre>
+
+<p>which will save the files as <code>/home/user/mylatent-...</code>.
+Every sampled latent matrix of every entity will be saved as a separate file, stored as binary 32bit float values.
+To save the files using prefix <code>mylatent</code> into the current working directory use <code>output = "mylatent"</code>.</p>
+<h2 id="reading-latent-matrix-files">Reading latent matrix files</h2>
+<p>The saved files can then be read by</p>
+<pre><code class="julia">using BayesianDataFusion
+U1 = read_binary_float32(&quot;mylatent-entity1-01.binary&quot;)
+</code></pre>
+
+<h2 id="saving-link-matrix-beta">Saving link matrix (beta)</h2>
+<p>For the models that have features the sampled link matrices <code>beta</code> can be saved by setting both <code>output</code> to a prefix and <code>output_beta = true</code>. For example:</p>
+<pre><code>result = macau(RD, output = &quot;/home/user/mylatent&quot;, output_beta = true)
+</code></pre>
+
+<p>The beta matrices can be read similarly to latent matrix files using <code>read_binary_float32</code>.</p></div>
             
         </div>
 
@@ -225,5 +251,5 @@ result = macau(RD, burnin=400, psamples=200, clamp=[1.0, 5.0], num_latent=10)
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-07-22 22:29:31.500255
+Build Date UTC : 2015-09-21 16:35:33.252033
 -->
