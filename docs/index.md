@@ -2,7 +2,7 @@
 
 This gives reference and examples for [BayesianDataFusion.jl](https://github.com/jaak-s/BayesianDataFusion.jl).
 
-# Features
+## Features
 `BayesianDataFusion.jl` provides parallel and highly optimized implementation for
 
 *  Bayesian Probabilistic Matrix Factorization (BPMF)
@@ -15,7 +15,7 @@ These methods allow to predict **unobserved values** in the matrices (or tensors
 *  use of **relation side information** to improve factorization  (e.g., data about when user went to see particular movie)
 *  factorization of **several** matrices (and tensors) for an entity simultaneously.
 
-# Installation
+## Installation
 Inside Julia:
 ```julia
 Pkg.clone("https://github.com/jaak-s/BayesianDataFusion.jl.git")
@@ -103,3 +103,20 @@ RD = RelationData(ratings)
 result = macau(RD, burnin=400, psamples=200, clamp=[1.0, 5.0], num_latent=10)
 ```
 In most applications the performance of pure BPMF is weaker compared to Macau. This is also true in the case of MovieLens dataset.
+
+
+# Saving latent vectors
+To save the sampled latent variables to disk macau has `output` parameter. If it is set to non-empty string `macau` saves all posterior latent variable matrices and uses the `output` value as a prefix for the file names. The prefix can also include the path, for example
+```
+result = macau(RD, output = "/home/user/mylatent")
+```
+which will save the files as `/home/user/mylatent-...`.
+Every sampled latent matrix of every entity will be saved as a separate file storing binary 32bit float values.
+To save the files into the current working directory use `output = "mylatent"` as parameter to `macau`.
+
+## Reading latent vector files
+The saved files can then be read by
+```julia
+using BayesianDataFusion
+U1 = read_binary_float32("mylatent-entity1-01.binary")
+```
