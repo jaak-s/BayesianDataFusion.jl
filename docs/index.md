@@ -14,6 +14,7 @@ These methods allow to predict **unobserved values** in the matrices (or tensors
 *  use of **entity side information** to improve factorization (e.g, user and/or movie features for factorizing movie ratings)
 *  use of **relation side information** to improve factorization  (e.g., data about when user went to see particular movie)
 *  factorization of **several** matrices (and tensors) for an entity simultaneously.
+*  Macau can handle high dimensional side-information, e.g., 1,000,000-dimensional user features.
 
 ## Installation
 Inside Julia:
@@ -111,12 +112,19 @@ To save the sampled latent variables to disk macau has `output` parameter. If it
 result = macau(RD, output = "/home/user/mylatent")
 ```
 which will save the files as `/home/user/mylatent-...`.
-Every sampled latent matrix of every entity will be saved as a separate file storing binary 32bit float values.
-To save the files into the current working directory use `output = "mylatent"` as parameter to `macau`.
+Every sampled latent matrix of every entity will be saved as a separate file, stored as binary 32bit float values.
+To save the files using prefix `mylatent` into the current working directory use `output = "mylatent"`.
 
-## Reading latent vector files
+## Reading latent matrix files
 The saved files can then be read by
 ```julia
 using BayesianDataFusion
 U1 = read_binary_float32("mylatent-entity1-01.binary")
 ```
+
+## Saving link matrix (beta)
+For the models that have features the sampled link matrices `beta` can be saved by setting both `output` to a prefix and `output_beta = true`. For example:
+```
+result = macau(RD, output = "/home/user/mylatent", output_beta = true)
+```
+The beta matrices can be read similarly to latent matrix files using `read_binary_float32`.
