@@ -86,6 +86,11 @@ function macau(data::RelationData;
       end
     end
 
+    # Sampling prior for latents
+    for en in data.entities
+      update_latent_prior!(en, full_lambda_u)
+    end
+
     # Sampling latent vectors
     for j in 1:length(data.entities)
       en = data.entities[j]
@@ -108,11 +113,6 @@ function macau(data::RelationData;
           sample_user2_all!(data.entities[j], en.modes, en.modes_other)
         end
       end
-    end
-
-    # Sampling prior for latents
-    for en in data.entities
-      update_latent_prior!(en, full_lambda_u)
     end
 
     for en in data.entities
