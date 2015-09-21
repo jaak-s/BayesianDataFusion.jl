@@ -1,5 +1,5 @@
 include("basic.jl")
-# alpha sampling
+include("beta_saving.jl")
 include("alpha_sampling.jl")
 include("tensor.jl")
 include("custom_rd.jl")

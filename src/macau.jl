@@ -16,10 +16,15 @@ function macau(data::RelationData;
               rmse_train      = false,
               tol             = NaN,
               output          = "",
+              output_beta     = false,
               clamp::Vector{Float64}  = Float64[],
               f::Union(Function,Bool) = false)
   correct = Float64[]
   local yhat_full
+
+  if output_beta && isempty(output)
+    error("To output samples of beta ('output_beta = true') you have to set also output prefix, e.g., output = \"my_model\".")
+  end
 
   verbose && println("Model setup")
   if reset_model
@@ -128,6 +133,9 @@ function macau(data::RelationData;
           ndigits = convert( Int, floor(log10(psamples)) ) + 1
           nstr    = lpad(string(i-burnin), ndigits, "0")
           write_binary_matrix(@sprintf("%s-%s-%s.binary", output, en.name, nstr), convert(Array{Float32}, en.model.sample) )
+          if output_beta && hasFeatures(en)
+            write_binary_matrix(@sprintf("%s-%s-%s.beta.binary", output, en.name, nstr), convert(Array{Float32}, en.model.beta) )
+          end
         end
       end
       if rmse_train
