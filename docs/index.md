@@ -55,8 +55,8 @@ setPrecision!(ratings, 1.5)
 ## the model (with only one relation)
 RD = RelationData(ratings)
 
-## run Gibbs sampler of Macau with 10 latent dimensions, total of 400 burnin and 200 posterior samples
-result = macau(RD, burnin=400, psamples=200, clamp=[1.0, 5.0], num_latent=10)
+## run Gibbs sampler of Macau with 10 latent dimensions, total of 100 burnin and 400 posterior samples
+result = macau(RD, burnin=100, psamples=400, clamp=[1.0, 5.0], num_latent=10)
 ```
 This model has only a single relation `ratings` between entities `users` and `movies`.
 We use precision 1.5, which is known to be a good estimate of movie rating noise.
@@ -100,8 +100,8 @@ setPrecision!(ratings, 1.5)
 ## the model (with only one relation)
 RD = RelationData(ratings)
 
-## run Gibbs sampler of Macau with 10 latent dimensions, total of 400 burnin and 200 posterior samples
-result = macau(RD, burnin=400, psamples=200, clamp=[1.0, 5.0], num_latent=10)
+## run Gibbs sampler of Macau with 10 latent dimensions, total of 100 burnin and 400 posterior samples
+result = macau(RD, burnin=100, psamples=400, clamp=[1.0, 5.0], num_latent=10)
 ```
 In most applications the performance of pure BPMF is weaker compared to Macau. This is also true in the case of MovieLens dataset.
 
