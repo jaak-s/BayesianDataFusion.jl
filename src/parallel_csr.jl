@@ -11,7 +11,7 @@ end
 function psparse(F, procs)
   ParallelSparseMatrix(
     F,
-    map(i -> @spawnat(i, fetch(F)), procs),
+    Any[@spawnat(i, fetch(F)) for i in procs],
     procs)
 end
 
