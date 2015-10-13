@@ -4,6 +4,8 @@ export SparseBinMatrix, ParallelLogic, ParallelSBM, balanced_parallelsbm
 export sort_hilbert
 export AtA_mul_B!
 
+using Compat
+
 type SparseBinMatrix
   m::Int64
   n::Int64
@@ -34,7 +36,7 @@ type ParallelLogic
 
   ## semaphores
   tmp::SharedVector{Float64}
-  sems::Vector{SharedArray{Uint32,1}}
+  sems::Vector{SharedArray{UInt32,1}}
 
   ## constructor for non-shared elements
   ParallelLogic(mblocks, nblocks, mblock_order, nblock_order, localm, localn) = new(mblocks, nblocks, mblock_order, nblock_order, localm, localn)
@@ -54,7 +56,7 @@ type ParallelSBM
   tmp::SharedVector{Float64}    ## for storing middle vector in A'A 
   sh1::SharedVector{Float64}    ## length(sh1) = A.n
   sh2::SharedVector{Float64}    ## length(sh2) = A.n
-  sems::Vector{SharedArray{Uint32,1}} ## semaphores
+  sems::Vector{SharedArray{UInt32,1}} ## semaphores
 
   ## constructors
   ParallelSBM(m, n, pids, sbms, logic, numblocks) = new(m, n, pids, sbms, logic, numblocks)
@@ -64,7 +66,7 @@ end
 nonshared(A::ParallelSBM) = ParallelSBM(A.m, A.n, A.pids, A.sbms, A.logic, A.numblocks)
 
 function make_sems(numblocks::Int, pids::Vector{Int})
-  sems = SharedArray{Uint32,1}[SharedArray(Uint32, 16, pids=pids) for i=1:numblocks]
+  sems = SharedArray{UInt32,1}[SharedArray(UInt32, 16, pids=pids) for i=1:numblocks]
   for sem in sems
     sem_init(sem)
   end
@@ -132,7 +134,7 @@ function copyto(F::ParallelSBM, pids::Vector{Int})
 end
 
 
-sem_init(x::SharedArray)    = ccall(:sem_init, Cint, (Ptr{Void}, Cint, Cuint), x, 1, one(Uint32))
+sem_init(x::SharedArray)    = ccall(:sem_init, Cint, (Ptr{Void}, Cint, Cuint), x, 1, one(UInt32))
 sem_wait(x::SharedArray)    = ccall(:sem_wait, Cint, (Ptr{Void},), x)
 sem_trywait(x::SharedArray) = ccall(:sem_trywait, Cint, (Ptr{Void},), x)
 sem_post(x::SharedArray)    = ccall(:sem_post, Cint, (Ptr{Void},), x)

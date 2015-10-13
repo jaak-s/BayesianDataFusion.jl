@@ -45,7 +45,7 @@ type Entity{FT,R}
   Frefs::Vector{RemoteRef}
   relations::Vector{R}
   count::Int64
-  name::String
+  name::AbstractString
 
   modes::Vector{Int}
   modes_other::Vector{Vector{Int}}
@@ -56,10 +56,10 @@ type Entity{FT,R}
   nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::String, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1.0) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
+  Entity(F, relations::Vector{R}, count::Int64, name::AbstractString, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1.0) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
 end
 
-Entity(name::String; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
+Entity(name::AbstractString; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
 
 ## initializes the model parameters
 function initModel!(entity::Entity, num_latent::Int64; lambda_beta::Float64 = NaN)
@@ -128,7 +128,7 @@ type Relation
   data::IndexedDF
   F
   entities::Vector{Entity}
-  name::String
+  name::AbstractString
 
   test_vec::DataFrame
   test_F
@@ -138,9 +138,9 @@ type Relation
   model::RelationModel
   temp::RelationTemp
 
-  Relation(data::IndexedDF, name::String, class_cut=0.0, alpha=1.0) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel(alpha))
+  Relation(data::IndexedDF, name::AbstractString, class_cut=0.0, alpha=1.0) = new(data, (), Entity[], name, data.df[Int[],:], (), Bool[], class_cut, RelationModel(alpha))
   ## Relation with already setup entities
-  function Relation(data::DataFrame, name::String, entities=Entity[]; class_cut=0.0,
+  function Relation(data::DataFrame, name::AbstractString, entities=Entity[]; class_cut=0.0,
                     dims = Int64[maximum(data[:,i]) for i in 1 : size(data,2)-1])
     if ! isempty(entities)
       size(data, 2) - 1 == length(entities) || throw(ArgumentError("data has $(size(data,2)) columns but needs to have $(length(entities)) which is number of entities + 1"))
@@ -161,7 +161,7 @@ type Relation
 end
 
 ## creating Relation from sparse matrix
-function Relation(data::SparseMatrixCSC, name::String, entities=Entity[]; class_cut=0.0)
+function Relation(data::SparseMatrixCSC, name::AbstractString, entities=Entity[]; class_cut=0.0)
   length(entities) == 2 || throw(ArgumentError("For matrix relation the number of entities has to be 2."))
   U, V, X = findnz(data)
   dims = Int[size(data,1), size(data,2)]

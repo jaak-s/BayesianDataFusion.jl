@@ -2,7 +2,7 @@ using BayesianDataFusion
 #using BayesianDataFusion.ParallelMatrix
 using Base.Test
 
-
+using Compat
 
 ######### test hilbert sorting #######
 rows = [1:4; 1:4; 1:4; 1:4]
@@ -24,7 +24,7 @@ end
 @everywhere using BayesianDataFusion
 
 ######### lock test ############
-z = SharedArray(Uint32, 16)
+z = SharedArray(UInt32, 16)
 @test BayesianDataFusion.sem_init(z) == 0
 @test z[1] == 1
 @test fetch(@spawnat 2 z[1]) == 1

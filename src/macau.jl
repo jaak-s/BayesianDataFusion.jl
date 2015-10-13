@@ -18,7 +18,7 @@ function macau(data::RelationData;
               output          = "",
               output_beta     = false,
               clamp::Vector{Float64}  = Float64[],
-              f::Union(Function,Bool) = false)
+              f               = false)
   correct = Float64[]
   local yhat_full
 
@@ -204,7 +204,7 @@ function macau(data::RelationData;
     end
   end
 
-  result = Dict{String,Any}()
+  result = Dict{AbstractString,Any}()
   result["num_latent"]  = num_latent
   result["burnin"]      = burnin
   result["psamples"]    = psamples
