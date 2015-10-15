@@ -128,3 +128,15 @@ For the models that have features the sampled link matrices `beta` can be saved 
 result = macau(RD, output = "/home/user/mylatent", output_beta = true)
 ```
 The beta matrices can be read similarly to latent matrix files using `read_binary_float32`.
+
+# Efficient storage of sparse matrices
+The package also includes functions for writing and reading binary format for sparse matrix.
+```julia
+## random sparse matrix
+X = sprand(100, 50, 0.1)
+write_sparse_float32("X.sparse", X)
+
+## reading back the rows, cols and values from the file
+I, J, V = read_sparse_float32("X.sparse")
+X2 = sparse(I, J, V)
+```

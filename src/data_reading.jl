@@ -96,6 +96,16 @@ function write_binary_matrix(filename, X)
   end
 end
 
+function write_sparse_float32(filename, X::SparseMatrixCSC)
+  I, J, V = findnz(X)
+  write_sparse_float32(
+    filename,
+    convert(Vector{Int32}, I),
+    convert(Vector{Int32}, J),
+    convert(Vector{Float32}, V))
+  nothing
+end
+
 function write_sparse_float32(filename, rows::Vector{Int32}, cols::Vector{Int32}, values::Vector{Float32})
   open(filename, "w") do f
     write(f, length(rows))
@@ -103,6 +113,7 @@ function write_sparse_float32(filename, rows::Vector{Int32}, cols::Vector{Int32}
     write(f, cols)
     write(f, values)
   end
+  nothing
 end
 
 function read_matrix_market(filename)
