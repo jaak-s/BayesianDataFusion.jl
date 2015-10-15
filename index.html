@@ -81,6 +81,9 @@
             <li><a href="#saving-link-matrix-beta">Saving link matrix (beta)</a></li>
         
     
+        <li class="main "><a href="#efficient-storage-of-sparse-matrices">Efficient storage of sparse matrices</a></li>
+        
+    
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
@@ -204,7 +207,17 @@ U1 = read_binary_float32(&quot;mylatent-entity1-01.binary&quot;)
 <pre><code>result = macau(RD, output = &quot;/home/user/mylatent&quot;, output_beta = true)
 </code></pre>
 
-<p>The beta matrices can be read similarly to latent matrix files using <code>read_binary_float32</code>.</p></div>
+<p>The beta matrices can be read similarly to latent matrix files using <code>read_binary_float32</code>.</p>
+<h1 id="efficient-storage-of-sparse-matrices">Efficient storage of sparse matrices</h1>
+<p>The package also includes functions for writing and reading binary format for sparse matrix.</p>
+<pre><code class="julia">## random sparse matrix
+X = sprand(100, 50, 0.1)
+write_sparse_float32(&quot;X.sparse&quot;, X)
+
+## reading back the rows, cols and values from the file
+I, J, V = read_sparse_float32(&quot;X.sparse&quot;)
+X2 = sparse(I, J, V)
+</code></pre></div>
             
         </div>
 
@@ -251,5 +264,5 @@ U1 = read_binary_float32(&quot;mylatent-entity1-01.binary&quot;)
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-09-23 21:52:18.984547
+Build Date UTC : 2015-10-15 17:19:45.474278
 -->
