@@ -1,4 +1,5 @@
 using DataFrames
+using Compat
 
 include("IndexedDF.jl")
 typealias SparseMatrix SparseMatrixCSC{Float64, Int64} 
@@ -458,7 +459,7 @@ function load_mf1c(;ic50_file     = "chembl_19_mf1c/chembl-IC50-346targets.csv",
   dims = [maximum(X[:compound]), maximum(X[:target])]
 
   X[:, :value] = log10(X[:, :value]) + 1e-5
-  idx          = sample(1:size(X,1), int(floor(20/100 * size(X,1))); replace=false)
+  idx          = sample(1:size(X,1), round(Int, floor(20/100 * size(X,1))); replace=false)
   probe_vec    = X[idx,:]
   X            = X[setdiff(1:size(X,1), idx), :]
   
