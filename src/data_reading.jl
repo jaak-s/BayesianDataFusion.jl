@@ -3,6 +3,7 @@ export read_binary_int32, filter_rare, write_binary_int32
 export write_binary_matrix
 export read_binary_float32
 export read_sparse_float32, write_sparse_float32
+export read_sparse_bin, write_sparse_bin
 export read_matrix_market
 
 function read_ecfp(filename)
@@ -74,6 +75,15 @@ function read_sparse_float32(filename)
   end
 end
 
+function read_sparse_bin(filename)
+  open(filename) do f
+    nnz = read(f, Int64)
+    rows = read(f, Int32, nnz)
+    cols = read(f, Int32, nnz)
+    return rows, cols
+  end
+end
+
 function read_sparse(filename)
     rc = read_rowcol(filename)
     return sparse(rc[1], rc[2], 1f0)
@@ -112,6 +122,15 @@ function write_sparse_float32(filename, rows::Vector{Int32}, cols::Vector{Int32}
     write(f, rows)
     write(f, cols)
     write(f, values)
+  end
+  nothing
+end
+
+function write_sparse_bin(filename, rows::Vector{Int32}, cols::Vector{Int32})
+  open(filename, "w") do f
+    write(f, length(rows))
+    write(f, rows)
+    write(f, cols)
   end
   nothing
 end
