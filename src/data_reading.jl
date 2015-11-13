@@ -3,6 +3,7 @@ export read_binary_int32, filter_rare, write_binary_int32
 export write_binary_matrix
 export read_binary_float32
 export read_sparse_float32, write_sparse_float32
+export read_sparse_float64, write_sparse_float64
 export read_sparse_bin, write_sparse_bin
 export read_matrix_market
 
@@ -155,4 +156,29 @@ function read_matrix_market(filename)
     nrows,
     ncols
   )
+end
+
+function write_sparse_float64(filename, X)
+  open(filename, "w") do f
+    nz = findnz(X)
+    write(f, size(X, 1))  ## nrow
+    write(f, size(X, 2))  ## ncol
+    write(f, length(nz[1]))  ## nnz
+    write(f, convert(Vector{Int32}, nz[1])) ## row_idx
+    write(f, convert(Vector{Int32}, nz[2])) ## col_idx
+    write(f, convert(Vector{Float64}, nz[3])) ## values
+  end
+  nothing
+end
+
+function read_sparse_float64(filename)
+  open(filename) do f
+    nrow = read(f, Int64)
+    ncol = read(f, Int64)
+    nnz  = read(f, Int64)
+    rows = read(f, Int32, nnz)
+    cols = read(f, Int32, nnz)
+    vals = read(f, Float64, nnz)
+    return sparse(rows, cols, vals, nrow, ncol)
+  end
 end
