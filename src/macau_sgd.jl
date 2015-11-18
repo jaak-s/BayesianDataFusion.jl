@@ -15,8 +15,6 @@ function macau_sgd(data::RelationData;
   rmse = NaN
   rmse_sample = NaN
   rmse_train  = NaN
-  #Umodel = HMCModel(num_latent, data.entities[1].count, diag(data.entities[1].model.Lambda))
-  #Vmodel = HMCModel(num_latent, data.entities[2].count, diag(data.entities[2].model.Lambda))
 
   ## data
   df  = data.relations[1].data.df
