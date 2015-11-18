@@ -158,6 +158,21 @@ To build a model with larger latent dimension use, for example, <code>num_latent
 </code></pre>
 
 <p>The Acc/ROC/RMSE are computed on the test ratings. Note the optional argument <code>class_cut = 2.5</code>, used for creating a <code>Relation</code>, defines the class boundary for computing accuracy (Acc) and AUC-ROC (ROC) values. </p>
+<p>An example result of the run is:</p>
+<pre><code>Dict{AbstractString,Any} with 10 entries:
+  &quot;latent_multi_threading&quot; =&gt; true
+  &quot;psamples&quot;               =&gt; 400
+  &quot;lambda_beta&quot;            =&gt; 14.506891192240246
+  &quot;RMSE&quot;                   =&gt; 0.8526296036293598
+  &quot;train_counts&quot;           =&gt; 500000x2 DataFrames.DataFrame…
+  &quot;predictions&quot;            =&gt; 500000x5 DataFrames.DataFrame…
+  &quot;burnin&quot;                 =&gt; 100
+  &quot;num_latent&quot;             =&gt; 10
+  &quot;accuracy&quot;               =&gt; 0.870428
+  &quot;ROC&quot;                    =&gt; 0.8485116969174835
+</code></pre>
+
+<p>where <code>result["predictions"]</code> gives predicted values and their standard deviation for the values in the test set. The <code>result</code> also contains ROC, RMSE and accuracy values for the test set.</p>
 <h2 id="movielens-wo-side-information">MovieLens w/o side-information</h2>
 <p>The above example used user and move features. You can easily factorize the ratings without them, which would correspond to classic <strong>BPMF</strong> method. Here is an example code</p>
 <pre><code class="julia">using BayesianDataFusion
@@ -207,7 +222,7 @@ U1 = read_binary_float32(&quot;mylatent-entity1-01.binary&quot;)
 <pre><code>result = macau(RD, output = &quot;/home/user/mylatent&quot;, output_beta = true)
 </code></pre>
 
-<p>The beta matrices can be read similarly to latent matrix files using <code>read_binary_float32</code>.</p>
+<p>The beta matrices can be read similarly to latent matrix files by using <code>read_binary_float32</code>.</p>
 <h1 id="efficient-storage-of-sparse-matrices">Efficient storage of sparse matrices</h1>
 <p>The package also includes functions for writing and reading binary format for sparse matrix.</p>
 <pre><code class="julia">## random sparse matrix
@@ -264,5 +279,5 @@ X2 = sparse(I, J, V)
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-10-15 17:19:45.474278
+Build Date UTC : 2015-11-18 17:24:53.470240
 -->
