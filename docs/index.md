@@ -74,6 +74,22 @@ Macau output shows the progress of the Gibbs sampler:
 ```
 The Acc/ROC/RMSE are computed on the test ratings. Note the optional argument `class_cut = 2.5`, used for creating a `Relation`, defines the class boundary for computing accuracy (Acc) and AUC-ROC (ROC) values. 
 
+An example result of the run is:
+```
+Dict{AbstractString,Any} with 10 entries:
+  "latent_multi_threading" => true
+  "psamples"               => 400
+  "lambda_beta"            => 14.506891192240246
+  "RMSE"                   => 0.8526296036293598
+  "train_counts"           => 500000x2 DataFrames.DataFrame…
+  "predictions"            => 500000x5 DataFrames.DataFrame…
+  "burnin"                 => 100
+  "num_latent"             => 10
+  "accuracy"               => 0.870428
+  "ROC"                    => 0.8485116969174835
+```
+where `result["predictions"]` gives predicted values and their standard deviation for the values in the test set. The `result` also contains ROC, RMSE and accuracy values for the test set.
+
 ## MovieLens w/o side-information
 The above example used user and move features. You can easily factorize the ratings without them, which would correspond to classic **BPMF** method. Here is an example code
 ```julia
@@ -127,7 +143,7 @@ For the models that have features the sampled link matrices `beta` can be saved 
 ```
 result = macau(RD, output = "/home/user/mylatent", output_beta = true)
 ```
-The beta matrices can be read similarly to latent matrix files using `read_binary_float32`.
+The beta matrices can be read similarly to latent matrix files by using `read_binary_float32`.
 
 # Efficient storage of sparse matrices
 The package also includes functions for writing and reading binary format for sparse matrix.
