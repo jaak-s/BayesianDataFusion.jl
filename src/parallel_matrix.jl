@@ -23,6 +23,17 @@ end
 SparseBinMatrix(rows::Vector{Int32}, cols::Vector{Int32}) = SparseBinMatrix(maximum(rows), maximum(cols), rows, cols)
 SparseBinMatrix(rows::Vector{Int64}, cols::Vector{Int64}) = SparseBinMatrix(convert(Vector{Int32}, rows), convert(Vector{Int32}, cols))
 
+import Base.getindex
+function getindex(sbm::SparseBinMatrix, rows::Vector{Bool}, cols::Colon)
+  length(rows) == sbm.m || throw(DimensionMismatch("length(rows) must equal size(sbm,1)"))
+  idx = rows[sbm.rows]
+  colidx = sbm.cols[idx]
+  rsum   = cumsum(rows)
+  rowidx = rsum[ sbm.rows[idx] ]
+  out = SparseBinMatrix(sum(rows), sbm.n, one(Int32):convert(Int32,sum(rows)), sbm.nrange, rowidx, colidx)
+  return out
+end
+
 type ParallelLogic
   ## for parallel compute
   mblocks::Vector{UnitRange{Int32}}
