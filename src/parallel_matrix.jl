@@ -34,6 +34,9 @@ function getindex(sbm::SparseBinMatrix, rows::Vector{Bool}, cols::Colon)
   return out
 end
 
+import Base.ndims
+ndims(sbm::SparseBinMatrix) = 2
+
 type ParallelLogic
   ## for parallel compute
   mblocks::Vector{UnitRange{Int32}}
