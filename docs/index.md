@@ -26,7 +26,7 @@ Pkg.clone("https://github.com/jaak-s/BayesianDataFusion.jl.git")
 Next we give simple examples of using **Macau** for movie ratings prediction from MovieLens data, which is included in the BayesianDataFusion package.
 
 ## MovieLens
-We will use `macau` function to factorization (incompletely observed) matrix of movie ratings with **side information** for both users and movies. To run the example first install Julia library for reading matlab files
+We will use `macau` function to factorize (incompletely observed) matrix of movie ratings with **side information** for both users and movies. The side information contains basic features about users like age group and gender and genre information for movies. To run the example first install Julia library for reading matlab files
 ```julia
 Pkg.add("MAT")
 ```
@@ -38,7 +38,7 @@ using MAT
 pkgdir = Pkg.dir("BayesianDataFusion")
 data   = matread("$pkgdir/data/movielens_1m.mat")
 
-## setup entities, assigning features through (optional) argument F
+## setup entities, assigning side information through optional argument F
 users  = Entity("users",  F=data["Fu"]);
 movies = Entity("movies", F=data["Fv"]);
 
