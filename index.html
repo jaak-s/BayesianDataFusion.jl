@@ -112,7 +112,7 @@
 <h1 id="examples">Examples</h1>
 <p>Next we give simple examples of using <strong>Macau</strong> for movie ratings prediction from MovieLens data, which is included in the BayesianDataFusion package.</p>
 <h2 id="movielens">MovieLens</h2>
-<p>We will use <code>macau</code> function to factorization (incompletely observed) matrix of movie ratings with <strong>side information</strong> for both users and movies. To run the example first install Julia library for reading matlab files</p>
+<p>We will use <code>macau</code> function to factorize (incompletely observed) matrix of movie ratings with <strong>side information</strong> for both users and movies. The side information contains basic features about users like age group and gender and genre information for movies. To run the example first install Julia library for reading matlab files</p>
 <pre><code class="julia">Pkg.add(&quot;MAT&quot;)
 </code></pre>
 
@@ -123,7 +123,7 @@ using MAT
 pkgdir = Pkg.dir(&quot;BayesianDataFusion&quot;)
 data   = matread(&quot;$pkgdir/data/movielens_1m.mat&quot;)
 
-## setup entities, assigning features through (optional) argument F
+## setup entities, assigning side information through optional argument F
 users  = Entity(&quot;users&quot;,  F=data[&quot;Fu&quot;]);
 movies = Entity(&quot;movies&quot;, F=data[&quot;Fv&quot;]);
 
@@ -279,5 +279,5 @@ X2 = sparse(I, J, V)
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-11-18 17:24:53.470240
+Build Date UTC : 2015-12-05 01:58:19.066458
 -->
