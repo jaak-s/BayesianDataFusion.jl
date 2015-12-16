@@ -142,7 +142,7 @@ function read_matrix_market(filename)
   nnz   = 0
   ## reading the first line
   open(filename) do f
-    arr = split( readline(f), ' ' )
+    arr = split( readline(f), [' ','\t'])
     nrows = parse(Int, arr[1])
     ncols = parse(Int, arr[2])
     nnz   = parse(Int, arr[3])
@@ -156,6 +156,18 @@ function read_matrix_market(filename)
     nrows,
     ncols
   )
+end
+
+function write_matrix_market(filename, X::DataFrame)
+  nrows = maximum(X[:, 1])
+  ncols = maximum(X[:, 2])
+  nnz   = size(X, 1)
+  ## writing the header line
+  open(filename, "w") do f
+    write(f, @sprintf("%d\t%d\t%d\n", nrows, ncols, nnz) )
+    writedlm(f, convert(Matrix, X[:,1:3]))
+  end
+  nothing
 end
 
 function write_sparse_float64(filename, X)
