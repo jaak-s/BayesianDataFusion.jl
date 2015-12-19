@@ -145,33 +145,34 @@ function grab_col{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, col::Integer)
   A.rowval[r], A.nzval[r]
 end
 
-## sampling latent values for sample_u in parallel
-function sample_latent_all!(sample_u::Matrix{Float64}, dataRefs::Vector, procs::Vector{Int}, mode::Int, mean_rating::Real, sample_m::Matrix{Float64}, alpha::Float64, mu_u, Lambda_u::Matrix{Float64})
+function sample_latent_all2!(rel::Relation, dataRefs::Vector, procs::Vector{Int}, mode::Int,mu_u, Lambda_u::Matrix{Float64})
   Nprocs = length(procs)
-  length(dataRefs) == Nprocs || error("Number of procs ($(Nprocs)) must equal number of dataRefs($(length(dataRefs))).")
-
+  length(dataRefs) == Nprocs || error("Number of procs ($(Nprocs)) must equal the number of dataRefs ($(length(dataRefs))).")
   ## 1. create split ranges 1:length(procs):idmax
-  ranges = StepRange[ i:Nprocs:size(sample_u,2) for i in 1:Nprocs ]
+  sample_u = rel.entities[mode].model.sample
+  ranges   = StepRange[ i:Nprocs:size(sample_u,2) for i in 1:Nprocs ]
+  sample_m = Matrix{Float64}[en.model.sample for en in rel.entities]
+  sample_m[mode] = zeros(0,0)
 
   mu_vector = typeof(mu_u) <: Vector
 
-  ## 2. call sample_latent_range at each worker with its dataRef
+  ## 2. call sample_latent_range_ref at each worker with its dataRef
   @sync begin
     for i in 1:Nprocs
       @async begin
         if mu_vector
-          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, mean_rating, sample_m, alpha, mu_u, Lambda_u)
+          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u, Lambda_u)
         else
-          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, mean_rating, sample_m, alpha, mu_u[:,ranges[i]], Lambda_u)
+          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u[:,ranges[i]], Lambda_u)
         end
       end
     end
   end
 end
 
-function sample_latent_range_ref(urange, Au_ref::RemoteRef, mode, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
-  Au = fetch(Au_ref)::FastIDF
-  return sample_latent_range(urange, Au, mode, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
+function sample_latent_range_ref(urange, Au_ref::RemoteRef, mode::Int, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
+  sample_m = length(sample_mt)==2 ? sample_mt[3 - mode] : sample_mt
+  return sample_latent_range(urange, fetch(Au_ref), mode, mean_rating, sample_m, alpha, mu_u, Lambda_u)
 end
 
 ## Sampling U, V for 2-way relation. Used by parallel code
@@ -195,13 +196,34 @@ function sample_latent_range(urange, Au::FastIDF, mode::Int, mean_rating, sample
   return U
 end
 
-## uses sample_mt = sample_m'
 function sample_user_basic(uu::Integer, Au::FastIDF, mode::Int, mean_rating, sample_mt::Matrix{Float64}, alpha::Float64, mu_u::Vector{Float64}, Lambda_u::Matrix{Float64})
   id, v = getData(Au, mode, uu)
   ff = id[:, mode == 1 ? 2 : 1]
 
   rr = v - mean_rating
   MM = sample_mt[:, ff]
+
+  covar = inv(Lambda_u + alpha * (MM*MM'))
+  mu    = covar * (alpha * MM * rr + Lambda_u * mu_u)
+
+  # Sample from normal distribution
+  chol(covar)' * randn(length(mu_u)) + mu
+end
+
+## for Tensors
+function sample_user_basic(uu::Integer, Au::FastIDF, mode::Int, mean_rating, sample_mt::Vector{Matrix{Float64}}, alpha::Float64, mu_u::Vector{Float64}, Lambda_u::Matrix{Float64})
+  id, v = getData(Au, mode, uu)
+
+  rr = v - mean_rating
+
+  #ff = id[:, mode == 1 ? 2 : 1]
+  #MM = sample_mt[:, ff]
+  omodes = filter(i-> i!=mode, 1:length(sample_mt))
+  j  = omodes[1]
+  MM = sample_mt[j][ :, id[:,j] ]
+  for j = omodes[2:end]
+    MM .*= sample_mt[j][ :, id[:,j] ]
+  end
 
   covar = inv(Lambda_u + alpha * (MM*MM'))
   mu    = covar * (alpha * MM * rr + Lambda_u * mu_u)

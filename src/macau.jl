@@ -41,7 +41,6 @@ function macau(data::RelationData;
   if length(latent_pids) >= 1
     ## initializing multi-threaded latent sampling:
     if length(data.relations) == 1 &&
-       length(data.entities)  == 2 &&
        ! hasFeatures(data.relations[1])
 
        latent_multi_threading = true
@@ -55,7 +54,7 @@ function macau(data::RelationData;
          end
        end
     else
-      verbose && println("Cannot use multi-threaded sampling of latent vectors, only works if 1 relation and 2 entities.")
+      verbose && println("Cannot use multi-threaded sampling of latent vectors, currently only works for 1 relation.")
     end
   end
 
@@ -96,9 +95,9 @@ function macau(data::RelationData;
         if hasFeatures(en)
           mj.uhat = F_mul_beta(en)'
           mu_matrix = mj.mu .+ mj.uhat
-          sample_latent_all!(mj.sample, latent_data_refs, latent_pids, en.modes[1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mu_matrix, mj.Lambda)
+          sample_latent_all2!(data.relations[1], latent_data_refs, latent_pids, en.modes[1], mu_matrix, mj.Lambda)
         else
-          sample_latent_all!(mj.sample, latent_data_refs, latent_pids, en.modes[1], data.relations[1].model.mean_value, sample_v, data.relations[1].model.alpha, mj.mu, mj.Lambda)
+          sample_latent_all2!(data.relations[1], latent_data_refs, latent_pids, en.modes[1], mj.mu, mj.Lambda)
         end
       else
         ## single thread
