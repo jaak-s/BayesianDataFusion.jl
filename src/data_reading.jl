@@ -140,22 +140,37 @@ function read_matrix_market(filename)
   nrows = 0
   ncols = 0
   nnz   = 0
-  ## reading the first line
+  local rows::Vector{Int32}
+  local cols::Vector{Int32}
+  local vals::Vector{Float64}
   open(filename) do f
-    arr = split( readline(f), [' ','\t'])
-    nrows = parse(Int, arr[1])
-    ncols = parse(Int, arr[2])
-    nnz   = parse(Int, arr[3])
+    ## reading the first line
+    while !eof(f)
+      ln = readline(f)
+      ln[1] == '%' && continue
+      arr = split(ln, [' ','\t'])
+      nrows = parse(Int, arr[1])
+      ncols = parse(Int, arr[2])
+      nnz   = parse(Int, arr[3])
+      break
+    end
+    rows = zeros(Int32, nnz)
+    cols = zeros(Int32, nnz)
+    vals = zeros(nnz)
+    i = 1
+    ## reading the rest
+    while !eof(f)
+      ln = readline(f)
+      ln[1] == '%' && continue
+      arr = split(ln, [' ','\t'])
+
+      rows[i] = parse(Int32, arr[1])
+      cols[i] = parse(Int32, arr[2])
+      vals[i] = parse(Float64, arr[3])
+      i += 1
+    end
   end
-  ## reading the rest
-  raw = readdlm(filename, skipstart=1)
-  return sparse(
-    convert(Vector{Int32}, raw[:,1]),
-    convert(Vector{Int32}, raw[:,2]),
-    raw[:,3],
-    nrows,
-    ncols
-  )
+  return sparse(rows, cols, vals, nrows, ncols)
 end
 
 function write_matrix_market(filename, X::DataFrame)
