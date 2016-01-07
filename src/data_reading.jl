@@ -179,6 +179,7 @@ function write_matrix_market(filename, X::DataFrame)
   nnz   = size(X, 1)
   ## writing the header line
   open(filename, "w") do f
+    write(f, "%%MatrixMarket matrix coordinate real general\n")
     write(f, @sprintf("%d\t%d\t%d\n", nrows, ncols, nnz) )
     writedlm(f, convert(Matrix, X[:,1:3]))
   end
