@@ -20,7 +20,7 @@ assignToTest!(rd.relations[1], 10)
 
 tmpdir = mktempdir()
 try
-  result = macau(rd, burnin=5, psamples=10, num_latent=2, verbose=false, output_beta=true, output="$tmpdir/macau-betasaving")
+  result = macau(rd, burnin=5, psamples=10, num_latent=2, verbose=false, output_beta=true, output="$tmpdir/macau-betasaving", output_type="binary")
   @test isfile("$tmpdir/macau-betasaving-A-01.binary")
   @test isfile("$tmpdir/macau-betasaving-A-01.beta.binary")
   @test isfile("$tmpdir/macau-betasaving-A-02.beta.binary")

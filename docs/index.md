@@ -128,11 +128,18 @@ To save the sampled latent variables to disk macau has `output` parameter. If it
 result = macau(RD, output = "/home/user/mylatent")
 ```
 which will save the files as `/home/user/mylatent-...`.
-Every sampled latent matrix of every entity will be saved as a separate file, stored as binary 32bit float values.
+Every sampled latent matrix of every entity will be saved as a separate file, stored by default in CSV format. There is also an option to save the output in binary 32bit floats (which will reduce the space required by 2x). This can be enabled by using `output_type="binary"`.
+
 To save the files using prefix `mylatent` into the current working directory use `output = "mylatent"`.
 
 ## Reading latent matrix files
-The saved files can then be read by
+The saved CSV files can be read by the standard `readdlm` function
+```julia
+U1 = readdlm("mylatent-entity1-01.csv", ',')
+```
+where "01" is the sample number that takes values from "01" (or "001") to `psamples`.
+
+If the `output_type="binary"` was used, the written files can be read by using the function `read_binary_float32`, for example
 ```julia
 using BayesianDataFusion
 U1 = read_binary_float32("mylatent-entity1-01.binary")
@@ -143,10 +150,10 @@ For the models that have features the sampled link matrices `beta` can be saved 
 ```
 result = macau(RD, output = "/home/user/mylatent", output_beta = true)
 ```
-The beta matrices can be read similarly to latent matrix files by using `read_binary_float32`.
+The beta matrices can be read similarly to the latent matrix files as described above, using either `readdlm` for CSV files and `read_binary_float32` for binary files.
 
 # Efficient storage of sparse matrices
-The package also includes functions for writing and reading binary format for sparse matrix.
+The package also includes functions for writing and reading binary format for **sparse matrix**.
 ```julia
 ## random sparse matrix
 X = sprand(100, 50, 0.1)

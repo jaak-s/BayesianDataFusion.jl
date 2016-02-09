@@ -124,7 +124,7 @@ result1a = macau(rd, burnin = 1, psamples = 2, verbose = false, rmse_train = tru
 tmpdir = mktempdir()
 try
   rd2 = RelationData(Y, class_cut = 0.5, entity1 = "e1", entity2 = "e2")
-  result1b = macau(rd2, burnin = 1, psamples = 10, verbose = false, num_latent = 5, output = "$tmpdir/macau-runtest")
+  result1b = macau(rd2, burnin = 1, psamples = 10, verbose = false, num_latent = 5, output = "$tmpdir/macau-runtest", output_type="binary")
   @test isfile("$tmpdir/macau-runtest-e1-01.binary")
   @test isfile("$tmpdir/macau-runtest-e1-02.binary")
   @test isfile("$tmpdir/macau-runtest-e2-01.binary")
@@ -133,6 +133,25 @@ try
   @test size(Y,1) == size(e1_sample,2) ## number of instances
   @test 5         == size(e1_sample,1) ## number of latents
   e1_sample2 = read_binary_float32("$tmpdir/macau-runtest-e1-10.binary")
+  e1_last    = convert(Array{Float32}, rd2.entities[1].model.sample)
+  @test_approx_eq   e1_sample2 e1_last
+finally
+  rm(tmpdir, recursive = true)
+end
+
+# writing output (latent vectors) works
+tmpdir = mktempdir()
+try
+  rd2 = RelationData(Y, class_cut = 0.5, entity1 = "e1", entity2 = "e2")
+  result1b = macau(rd2, burnin = 1, psamples = 10, verbose = false, num_latent = 5, output = "$tmpdir/macau-runtest", output_type="csv")
+  @test isfile("$tmpdir/macau-runtest-e1-01.csv")
+  @test isfile("$tmpdir/macau-runtest-e1-02.csv")
+  @test isfile("$tmpdir/macau-runtest-e2-01.csv")
+  @test isfile("$tmpdir/macau-runtest-e2-02.csv")
+  e1_sample = readdlm("$tmpdir/macau-runtest-e1-01.csv", ',')
+  @test size(Y,1) == size(e1_sample,2) ## number of instances
+  @test 5         == size(e1_sample,1) ## number of latents
+  e1_sample2 = readdlm("$tmpdir/macau-runtest-e1-10.csv", ',')
   e1_last    = convert(Array{Float32}, rd2.entities[1].model.sample)
   @test_approx_eq   e1_sample2 e1_last
 finally

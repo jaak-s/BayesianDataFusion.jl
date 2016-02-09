@@ -17,6 +17,7 @@ function macau(data::RelationData;
               tol             = NaN,
               output          = "",
               output_beta     = false,
+              output_type     = "csv",
               clamp::Vector{Float64}  = Float64[],
               f               = false)
   correct = Float64[]
@@ -25,6 +26,8 @@ function macau(data::RelationData;
   if output_beta && isempty(output)
     error("To output samples of beta ('output_beta = true') you have to set also output prefix, e.g., output = \"my_model\".")
   end
+
+  output_type in ["csv", "binary"] || error("output_type must be either \"csv\" or \"binary\".")
 
   verbose && println("Model setup")
   if reset_model
@@ -145,9 +148,11 @@ function macau(data::RelationData;
         for en in data.entities
           ndigits = convert( Int, floor(log10(psamples)) ) + 1
           nstr    = lpad(string(i-burnin), ndigits, "0")
-          write_binary_matrix(@sprintf("%s-%s-%s.binary", output, en.name, nstr), convert(Array{Float32}, en.model.sample) )
+          output_type == "binary" && write_binary_matrix(@sprintf("%s-%s-%s.binary", output, en.name, nstr), convert(Array{Float32}, en.model.sample) )
+          output_type == "csv"    && writedlm(@sprintf("%s-%s-%s.csv", output, en.name, nstr), convert(Array{Float32}, en.model.sample), ',')
           if output_beta && hasFeatures(en)
-            write_binary_matrix(@sprintf("%s-%s-%s.beta.binary", output, en.name, nstr), convert(Array{Float32}, en.model.beta) )
+            output_type == "binary" && write_binary_matrix(@sprintf("%s-%s-%s.beta.binary", output, en.name, nstr), convert(Array{Float32}, en.model.beta) )
+            output_type == "csv"    && writedlm(@sprintf("%s-%s-%s.beta.csv", output, en.name, nstr), convert(Array{Float32}, en.model.beta), ',')
           end
         end
       end
