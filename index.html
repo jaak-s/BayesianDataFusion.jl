@@ -209,10 +209,15 @@ result = macau(RD, burnin=100, psamples=400, clamp=[1.0, 5.0], num_latent=10)
 </code></pre>
 
 <p>which will save the files as <code>/home/user/mylatent-...</code>.
-Every sampled latent matrix of every entity will be saved as a separate file, stored as binary 32bit float values.
-To save the files using prefix <code>mylatent</code> into the current working directory use <code>output = "mylatent"</code>.</p>
+Every sampled latent matrix of every entity will be saved as a separate file, stored by default in CSV format. There is also an option to save the output in binary 32bit floats (which will reduce the space required by 2x). This can be enabled by using <code>output_type="binary"</code>.</p>
+<p>To save the files using prefix <code>mylatent</code> into the current working directory use <code>output = "mylatent"</code>.</p>
 <h2 id="reading-latent-matrix-files">Reading latent matrix files</h2>
-<p>The saved files can then be read by</p>
+<p>The saved CSV files can be read by the standard <code>readdlm</code> function</p>
+<pre><code class="julia">U1 = readdlm(&quot;mylatent-entity1-01.csv&quot;, ',')
+</code></pre>
+
+<p>where "01" is the sample number that takes values from "01" (or "001") to <code>psamples</code>.</p>
+<p>If the <code>output_type="binary"</code> was used, the written files can be read by using the function <code>read_binary_float32</code>, for example</p>
 <pre><code class="julia">using BayesianDataFusion
 U1 = read_binary_float32(&quot;mylatent-entity1-01.binary&quot;)
 </code></pre>
@@ -222,9 +227,9 @@ U1 = read_binary_float32(&quot;mylatent-entity1-01.binary&quot;)
 <pre><code>result = macau(RD, output = &quot;/home/user/mylatent&quot;, output_beta = true)
 </code></pre>
 
-<p>The beta matrices can be read similarly to latent matrix files by using <code>read_binary_float32</code>.</p>
+<p>The beta matrices can be read similarly to the latent matrix files as described above, using either <code>readdlm</code> for CSV files and <code>read_binary_float32</code> for binary files.</p>
 <h1 id="efficient-storage-of-sparse-matrices">Efficient storage of sparse matrices</h1>
-<p>The package also includes functions for writing and reading binary format for sparse matrix.</p>
+<p>The package also includes functions for writing and reading binary format for <strong>sparse matrix</strong>.</p>
 <pre><code class="julia">## random sparse matrix
 X = sprand(100, 50, 0.1)
 write_sparse_float32(&quot;X.sparse&quot;, X)
@@ -279,5 +284,5 @@ X2 = sparse(I, J, V)
 
 <!--
 MkDocs version : 0.14.0
-Build Date UTC : 2015-12-05 01:58:19.066458
+Build Date UTC : 2016-02-09 13:10:00.075527
 -->
