@@ -121,6 +121,53 @@ result = macau(RD, burnin=100, psamples=400, clamp=[1.0, 5.0], num_latent=10)
 ```
 In most applications the performance of pure BPMF is weaker compared to Macau. This is also true in the case of MovieLens dataset.
 
+## Multi-relational models
+Macau also provides factorization of models with multiple relations, where each entity can have also side information.
+Here is an example where we have 3 entities: `users`, `movies`, `books` with 2 relations `movie_ratings` and `book_ratings`.
+For illustration we add side information on `movies` (8-dimensional) and `books` (12-dimensional).
+```julia
+using BayesianDataFusion
+
+## entities
+Nusers  = 50
+Nmovies = 25
+Nbooks  = 20
+users  = Entity("users")
+movies = Entity("movies", F = randn(Nmovies, 8))  # side information
+books  = Entity("books",  F = randn(Nbooks, 12))  # side information
+
+## relations, using random data
+movie_ratings = Relation(sprand(Nusers, Nmovies, 0.2), "mratings", [users, movies], class_cut = 0.5)
+book_ratings  = Relation(sprand(Nusers, Nbooks, 0.3), "bratings", [users, books], class_cut = 0.5)
+
+## assign 20 movie ratings to test set
+assignToTest!(movie_ratings, 20)
+
+## set precision of the observation noise (inverse of variance)
+setPrecision!(movie_ratings, 1.5)
+setPrecision!(book_ratings, 2.0)
+
+## multi-relational model
+RD = RelationData()
+addRelation!(RD, movie_ratings)
+addRelation!(RD, book_ratings)
+
+## run Macau with 10 latent dimensions, total of 100 burnin and 400 posterior samples
+result = macau(RD, burnin=100, psamples=400, num_latent=10)
+```
+
+Note that Macau reports RMSE on the test data of the first relation, which in this example was `movie_ratings`.
+To see the model structure you can check the model (even before the run).
+```
+julia> RD
+[Relations]
+  mratings: users--movies, #known = 233, #test = 20, α = 1.50
+  bratings: users--books, #known = 314, #test = 0, α = 2.00
+[Entities]
+     users:     50 with no features
+    movies:     25 with 8 features (λ = sample)
+     books:     20 with 12 features (λ = sample)
+```
 
 # Saving latent vectors
 To save the sampled latent variables to disk macau has `output` parameter. If it is set to non-empty string `macau` saves all posterior latent variable matrices and uses the `output` value as a prefix for the file names. The prefix can also include the path, for example
