@@ -43,7 +43,7 @@ type Entity{FT,R}
   F::FT
   FF
   use_FF::Bool
-  Frefs::Vector{RemoteRef}
+  Frefs::Vector{Future}
   relations::Vector{R}
   count::Int64
   name::AbstractString
@@ -57,7 +57,7 @@ type Entity{FT,R}
   nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::AbstractString, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1e-3) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
+  Entity(F, relations::Vector{R}, count::Int64, name::AbstractString, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1e-3) = new(F, zeros(0,0), false, Future[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
 end
 
 Entity(name::AbstractString; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)
@@ -286,9 +286,19 @@ function RelationData(Am::DataFrame; rname="R1", class_cut=log10(200), alpha=5.0
   return rd
 end
 
+function rep_int(x, times)
+  out = zeros(eltype(x), sum(times))
+  idx = 1
+  for i in 1:size(x,1)
+    out[idx : idx+times[i]-1] = x[i]
+    idx += times[i]
+  end
+  return out
+end
+
 function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   dims = size(M)
-  cols = rep(1:size(M,2), M.colptr[2:end] - M.colptr[1:end-1])
+  cols = rep_int(1:size(M,2), M.colptr[2:end] - M.colptr[1:end-1])
   df   = DataFrame( row=M.rowval, col=cols, value=nonzeros(M) )
   idf  = IndexedDF(df, dims)
   return RelationData(idf; kw...)

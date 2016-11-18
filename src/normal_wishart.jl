@@ -1,5 +1,6 @@
 using Compat
 using Distributions
+using PDMats
 
 import Base.LinAlg: Cholesky
 
@@ -27,14 +28,19 @@ immutable NormalWishart <: Distribution
 end
 
 function NormalWishart(mu::Vector{Float64}, kappa::Real,
-                       T::Matrix{Float64}, nu::Real)
+                       T::AbstractMatrix{Float64}, nu::Real)
     NormalWishart(mu, kappa, cholfact(T), nu)
+end
+
+function NormalWishart(mu::Vector{Float64}, kappa::Real,
+                       T::PDMat, nu::Real)
+    NormalWishart(mu, kappa, T.chol, nu)
 end
 
 import Distributions.rand
 
 function rand(nw::NormalWishart)
     Lam = rand(Wishart(nw.nu, nw.Tchol))
-    mu = rand(MvNormal(nw.mu, inv(Lam) ./ nw.kappa))
+    mu = rand(MvNormal(nw.mu, full(inv(Hermitian(Lam))) ./ nw.kappa))
     return (mu, Lam)
 end

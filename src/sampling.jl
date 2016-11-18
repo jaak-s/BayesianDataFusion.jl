@@ -1,5 +1,6 @@
 using Iterators
 using Distributions
+using PDMats
 
 export pred, pred_all
 export solve_full
@@ -120,7 +121,7 @@ function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, beta_
   nu_N   = nu + N
   beta_N = beta_0 + N
   mu_N   = (beta_0*mu + NU) / (beta_0 + N)
-  T_N    = inv( Tinv + NS + beta_0 * mu * mu' - beta_N * mu_N * mu_N')
+  T_N    = inv(PDMat(Symmetric(Tinv + NS + beta_0 * mu * mu' - beta_N * mu_N * mu_N') ))
 
   NormalWishart(vec(mu_N), beta_N, T_N, nu_N)
 end
@@ -161,16 +162,16 @@ function sample_latent_all2!(rel::Relation, dataRefs::Vector, procs::Vector{Int}
     for i in 1:Nprocs
       @async begin
         if mu_vector
-          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u, Lambda_u)
+          sample_u[:, ranges[i]] = remotecall_fetch(sample_latent_range_ref, procs[i], ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u, Lambda_u)
         else
-          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u[:,ranges[i]], Lambda_u)
+          sample_u[:, ranges[i]] = remotecall_fetch(sample_latent_range_ref, procs[i], ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u[:,ranges[i]], Lambda_u)
         end
       end
     end
   end
 end
 
-function sample_latent_range_ref(urange, Au_ref::RemoteRef, mode::Int, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
+function sample_latent_range_ref(urange, Au_ref::Future, mode::Int, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
   sample_m = length(sample_mt)==2 ? sample_mt[3 - mode] : sample_mt
   return sample_latent_range(urange, fetch(Au_ref), mode, mean_rating, sample_m, alpha, mu_u, Lambda_u)
 end
@@ -207,7 +208,7 @@ function sample_user_basic(uu::Integer, Au::FastIDF, mode::Int, mean_rating, sam
   mu    = covar * (alpha * MM * rr + Lambda_u * mu_u)
 
   # Sample from normal distribution
-  chol(covar)' * randn(length(mu_u)) + mu
+  chol(Hermitian(covar))' * randn(length(mu_u)) + mu
 end
 
 ## for Tensors
@@ -229,7 +230,7 @@ function sample_user_basic(uu::Integer, Au::FastIDF, mode::Int, mean_rating, sam
   mu    = covar * (alpha * MM * rr + Lambda_u * mu_u)
 
   # Sample from normal distribution
-  chol(covar)' * randn(length(mu_u)) + mu
+  chol(Hermitian(covar))' * randn(length(mu_u)) + mu
 end
 
 type Block
@@ -244,7 +245,7 @@ function sample_users_blocked(block::Block, sample_mt::Matrix{Float64}, alpha::F
   mu    = covar * (alpha * MM * block.Yma .+ Lambda_u * mu_u)
 
   # Sample from normal distribution
-  chol(covar)' * randn(length(mu_u), size(mu, 2)) + mu
+  chol(Hermitian(covar))' * randn(length(mu_u), size(mu, 2)) + mu
 end
 
 function sample_user2_all!(s::Entity, modes::Vector{Int64}, modes_other::Vector{Vector{Int64}})
@@ -284,7 +285,7 @@ function sample_user2(s::Entity, i::Int, mu_si::Vector{Float64}, modes::Vector{I
   mu    = covar * mux
 
   # Sample from normal distribution
-  chol(covar)' * randn(length(mu)) + mu
+  chol(Hermitian(covar))' * randn(length(mu)) + mu
 end
 
 function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool, tol=NaN )
@@ -294,7 +295,7 @@ function sample_beta(entity, sample_u_c, Lambda_u, lambda_beta, use_ff::Bool, to
     tol = eps() * numF
   end
   
-  mv = MultivariateNormal(zeros(D), inv(Lambda_u) )
+  mv = MultivariateNormal(zeros(D), inv(PDMat(Symmetric(Lambda_u))) )
   ## TODO: using Ft_mul_Bt will be faster
   Ft_y = Ft_mul_B(entity, sample_u_c' + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
   #Ft_y = At_mul_B(entity.F, sample_u_c + rand(mv, N)') + sqrt(lambda_beta) * rand(mv, numF)'
