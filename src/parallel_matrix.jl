@@ -266,6 +266,14 @@ function At_mul_B!{Tx}(y::AbstractArray{Tx,1}, A::SparseBinMatrix, x::AbstractAr
     return
 end
 
+function A_mul_B!{Tx}(y::Array{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1})
+	A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
+  A.m == length(y) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(y))"))
+	A.sh1[1:end] = x
+	A_mul_B!(A.tmp, A, A.sh1)
+	y[1:end] = A.tmp
+end
+
 function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1})
   A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
   A.m == length(y) || throw(DimensionMismatch("A.m=$(A.m) must equal length(y)=$(length(y))"))
