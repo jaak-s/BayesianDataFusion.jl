@@ -53,7 +53,11 @@ function macau(data::RelationData;
        ## setting blas threads
        if latent_blas_threads >= 1
          for p in latent_pids
-           remotecall_wait(BLAS.set_num_threads, p, latent_blas_threads)
+           if VERSION >= v"0.5.0"
+             remotecall_wait(BLAS.set_num_threads, p, latent_blas_threads)
+           else
+             remotecall_wait(blas_set_num_threads, p, latent_blas_threads)
+           end
          end
        end
     else
