@@ -21,7 +21,7 @@ W  = sprand(50, 10, 0.1)
 rd = RelationData(W, class_cut = 0.5, feat1 = fp)
 assignToTest!(rd.relations[1], 2)
 
-result = macau(rd, burnin = 2, psamples = 2, num_latent=5)
+result = macau(rd, burnin = 2, psamples = 2, num_latent=5, verbose=false)
 
 @test size(rd.entities[1].model.beta) == (size(fp,2), 5)
 
@@ -38,6 +38,6 @@ Z2r = fp2 * Y2
 rd2 = RelationData(W, class_cut = 0.5, feat1 = fp2)
 assignToTest!(rd2.relations[1], 2)
 
-result = macau(rd2, burnin = 2, psamples = 2, num_latent=5)
+result = macau(rd2, burnin = 2, psamples = 2, num_latent=5, verbose=false)
 
 rmprocs( workers() )
