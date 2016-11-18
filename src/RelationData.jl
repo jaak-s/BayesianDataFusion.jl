@@ -286,9 +286,19 @@ function RelationData(Am::DataFrame; rname="R1", class_cut=log10(200), alpha=5.0
   return rd
 end
 
+function rep_int(x, times)
+  out = zeros(eltype(x), sum(times))
+  idx = 1
+  for i in 1:size(x,1)
+    out[idx : idx+times[i]-1] = x[i]
+    idx += times[i]
+  end
+  return out
+end
+
 function RelationData(M::SparseMatrixCSC{Float64,Int64}; kw...)
   dims = size(M)
-  cols = rep(1:size(M,2), M.colptr[2:end] - M.colptr[1:end-1])
+  cols = rep_int(1:size(M,2), M.colptr[2:end] - M.colptr[1:end-1])
   df   = DataFrame( row=M.rowval, col=cols, value=nonzeros(M) )
   idf  = IndexedDF(df, dims)
   return RelationData(idf; kw...)

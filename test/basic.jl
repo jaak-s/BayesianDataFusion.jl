@@ -17,6 +17,8 @@ x12 = getData(X, 1, 2)
 
 @test size(getData(X, 2, 2)) == (0,3)
 
+@test BayesianDataFusion.rep_int([2, 4, 1, 10], [3, 2, 1, 0]) == [2, 2, 2, 4, 4, 1]
+
 # FastIDF
 Xf = FastIDF(X)
 @test nnz(Xf) == 3
