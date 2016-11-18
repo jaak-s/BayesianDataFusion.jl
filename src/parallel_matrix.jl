@@ -71,8 +71,8 @@ type ParallelSBM
   m::Int64
   n::Int64
   pids::Vector{Int64}
-  sbms::Vector{RemoteRef}  ## SparseBinMatrix
-  logic::Vector{RemoteRef} ## ParallelLogic
+  sbms::Vector{Future}  ## SparseBinMatrix
+  logic::Vector{Future} ## ParallelLogic
 
   numblocks::Int                ## number of blocks, each has semaphore
   tmp::SharedVector{Float64}    ## for storing middle vector in A'A 
@@ -111,7 +111,7 @@ function ParallelSBM(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{Int}
   sh1   = SharedArray(Float64, convert(Int, n), pids=pids)
   sh2   = SharedArray(Float64, convert(Int, n), pids=pids)
   sems  = make_sems(numblocks, pids)
-  ps = ParallelSBM(m, n, pids, RemoteRef[], RemoteRef[], numblocks, shtmp, sh1, sh2, sems)
+  ps = ParallelSBM(m, n, pids, Future[], Future[], numblocks, shtmp, sh1, sh2, sems)
   ranges  = make_lengths(length(rows), weights)
   mblocks = make_blocks(m, convert(Int32, numblocks) )
   nblocks = make_blocks(n, convert(Int32, numblocks) )
@@ -143,7 +143,7 @@ function copyto(F::ParallelSBM, pids::Vector{Int})
   sh1   = SharedArray(Float64, size(F, 2), pids=pids)
   sh2   = SharedArray(Float64, size(F, 2), pids=pids)
   sems  = make_sems(F.numblocks, pids)
-  ps    = ParallelSBM(F.m, F.n, pids, RemoteRef[], RemoteRef[], F.numblocks, shtmp, sh1, sh2, sems)
+  ps    = ParallelSBM(F.m, F.n, pids, Future[], Future[], F.numblocks, shtmp, sh1, sh2, sems)
 
   for i in 1:length(F.sbms)
     push!(ps.sbms, @spawnat(pids[i], fetch(F.sbms[i])) )
@@ -303,15 +303,6 @@ end
 
 import Base.*
 
-function *{Tx}(A::ParallelSBM, x::AbstractArray{Tx,1})
-  A.n == length(x) || throw(DimensionMismatch("A.n=$(A.n) must equal length(x)=$(length(x))"))
-  A.sh1[1:end] = x
-  A_mul_B!(A.tmp, A, A.sh1)
-  y = zeros(Tx, length(A.tmp))
-  y[1:end] = A.tmp
-  return y
-end
-
 function At_mul_B{Tx}(A::ParallelSBM, x::AbstractArray{Tx,1})
   A.m == length(x) || throw(DimensionMismatch("A.m=$(A.m) must equal length(x)=$(length(x))"))
   A.tmp[1:end] = x
@@ -383,6 +374,7 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
   return ptime
 end
 
+import Base.copy!
 function copy!{Tx}(to::AbstractArray{Tx,1}, from::AbstractArray{Tx,1}, range)
   @inbounds @simd for i in range
     to[i] = from[i]
@@ -404,7 +396,7 @@ function rangefill!{Tx}(x::AbstractArray{Tx,1}, v::Tx, range)
   return nothing
 end
 
-function partmul_time{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::RemoteRef, x::SharedArray{Tx,1})
+function partmul_time{Tx}(y::SharedArray{Tx,1}, Aref::Future, logicref::Future, x::SharedArray{Tx,1})
   A     = fetch(Aref)::SparseBinMatrix
   logic = fetch(logicref)::ParallelLogic
   tic();
@@ -412,13 +404,13 @@ function partmul_time{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::Remot
   return toq()
 end
 
-function partmul_ref{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::RemoteRef, x::SharedArray{Tx,1})
+function partmul_ref{Tx}(y::SharedArray{Tx,1}, Aref::Future, logicref::Future, x::SharedArray{Tx,1})
   A     = fetch(Aref)::SparseBinMatrix
   logic = fetch(logicref)::ParallelLogic
   partmul(y, A, logic, x)
 end
 
-function partmul_t_ref{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, logicref::RemoteRef, x::SharedArray{Tx,1})
+function partmul_t_ref{Tx}(y::SharedArray{Tx,1}, Aref::Future, logicref::Future, x::SharedArray{Tx,1})
   A     = fetch(Aref)::SparseBinMatrix
   logic = fetch(logicref)::ParallelLogic
   partmul_t(y, A, logic, x)
@@ -485,7 +477,7 @@ function addshared!{Tx}(y::SharedArray{Tx,1}, x::AbstractArray{Tx,1}, sems, rang
 end
 
 ######## parallel operations on Frefs
-function solve_cg2(Frefs::Vector{RemoteRef}, rhs::Matrix{Float64}, lambda::Float64; tol=1e-6, maxiter=size(rhs,1))
+function solve_cg2(Frefs::Vector{Future}, rhs::Matrix{Float64}, lambda::Float64; tol=1e-6, maxiter=size(rhs,1))
   beta = zeros(size(rhs,1), size(rhs,2))
   D    = size(rhs,2)
   i    = 1
@@ -506,18 +498,18 @@ function solve_cg2(Frefs::Vector{RemoteRef}, rhs::Matrix{Float64}, lambda::Float
   return beta
 end
 
-function A_mul_B_ref(Fref::RemoteRef, x::AbstractVector{Float64})
+function A_mul_B_ref(Fref::Future, x::AbstractVector{Float64})
   F = fetch(Fref)
   return F * x
 end
 
-function At_mul_B_ref(Fref::RemoteRef, x::AbstractVector{Float64})
+function At_mul_B_ref(Fref::Future, x::AbstractVector{Float64})
   F = fetch(Fref)
   return At_mul_B(F, x)
 end
 
 ## computes y = F * x in parallel (along columns of x)
-function Frefs_mul_B(Frefs::Vector{RemoteRef}, x::Matrix{Float64})
+function Frefs_mul_B(Frefs::Vector{Future}, x::Matrix{Float64})
   m, n = fetch( @spawnat Frefs[1].where size(fetch(Frefs[1])) )
   n == size(x, 1) || throw(DimensionMismatch("Frefs.n=$(n) must equal length(x)=$(length(x))"))
   y = zeros(m, size(x,2))
@@ -539,7 +531,7 @@ function Frefs_mul_B(Frefs::Vector{RemoteRef}, x::Matrix{Float64})
 end
 
 ## computes y = F' * x in parallel (along columns of x)
-function Frefs_t_mul_B(Frefs::Vector{RemoteRef}, x::Matrix{Float64})
+function Frefs_t_mul_B(Frefs::Vector{Future}, x::Matrix{Float64})
   m, n = fetch( @spawnat Frefs[1].where size(fetch(Frefs[1])) )
   m == size(x, 1) || throw(DimensionMismatch("Frefs.m=$(m) must equal length(x)=$(length(x))"))
   y = zeros(n, size(x,2))

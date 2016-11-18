@@ -43,7 +43,7 @@ type Entity{FT,R}
   F::FT
   FF
   use_FF::Bool
-  Frefs::Vector{RemoteRef}
+  Frefs::Vector{Future}
   relations::Vector{R}
   count::Int64
   name::AbstractString
@@ -57,7 +57,7 @@ type Entity{FT,R}
   nu::Float64   ## Hyper-prior for lambda_beta
 
   model::EntityModel
-  Entity(F, relations::Vector{R}, count::Int64, name::AbstractString, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1e-3) = new(F, zeros(0,0), false, RemoteRef[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
+  Entity(F, relations::Vector{R}, count::Int64, name::AbstractString, lb::Float64=1.0, lb_sample::Bool=true, mu=1.0, nu=1e-3) = new(F, zeros(0,0), false, Future[], relations, count, name, Int[], Vector{Int}[], lb, lb_sample, mu, nu)
 end
 
 Entity(name::AbstractString; F=zeros(0,0), lambda_beta=1.0) = Entity{Any,Relation}(F::Any, Relation[], 0, name, lambda_beta)

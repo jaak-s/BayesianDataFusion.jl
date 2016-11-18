@@ -13,7 +13,7 @@ type ParallelBinCSR
   m::Int
   n::Int
   pids::Vector{Int64}
-  csrs::Vector{RemoteRef}
+  csrs::Vector{Future}
   mranges::Vector{StepRange{Int64,Int64}}
   blocksize::Int64
 end
@@ -66,7 +66,7 @@ function ParallelBinCSR(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{I
   csr = SparseBinMatrixCSR(rows, cols)
   npids  = length(pids)
   ranges = StepRange{Int,Int}[ 1+(i-1)*blocksize:npids*blocksize:size(csr,1) for i in 1:npids ]
-  pcsr   = ParallelBinCSR(csr.m, csr.n, pids, RemoteRef[], ranges, blocksize)
+  pcsr   = ParallelBinCSR(csr.m, csr.n, pids, Future[], ranges, blocksize)
   for i in 1:npids
     ref = @spawnat pids[i] fetch(csr)
     push!(pcsr.csrs, ref)
@@ -91,7 +91,7 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelBinCSR, x::SharedArray{Tx
   return nothing
 end
 
-function A_mul_B_part_ref{Tx}(y::SharedArray{Tx,1}, Aref::RemoteRef, x::SharedArray{Tx,1}, range::StepRange{Int,Int}, blocksize::Int)
+function A_mul_B_part_ref{Tx}(y::SharedArray{Tx,1}, Aref::Future, x::SharedArray{Tx,1}, range::StepRange{Int,Int}, blocksize::Int)
   A = fetch(Aref)::SparseBinMatrixCSR
   A_mul_B_range!(y, A, x, range, blocksize)
   return nothing

@@ -170,7 +170,7 @@ function sample_latent_all2!(rel::Relation, dataRefs::Vector, procs::Vector{Int}
   end
 end
 
-function sample_latent_range_ref(urange, Au_ref::RemoteRef, mode::Int, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
+function sample_latent_range_ref(urange, Au_ref::Future, mode::Int, mean_rating, sample_mt, alpha, mu_u, Lambda_u)
   sample_m = length(sample_mt)==2 ? sample_mt[3 - mode] : sample_mt
   return sample_latent_range(urange, fetch(Au_ref), mode, mean_rating, sample_m, alpha, mu_u, Lambda_u)
 end
