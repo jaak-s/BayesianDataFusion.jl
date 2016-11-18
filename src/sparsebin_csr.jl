@@ -1,4 +1,5 @@
 export SparseBinMatrixCSR, ParallelBinCSR
+using Compat
 
 ###################### SparseBinMatrixCSR #######################
 
@@ -9,7 +10,7 @@ type SparseBinMatrixCSR
   row_ptr::Vector{Int32}
 end
 
-type ParallelBinCSR
+@compat type ParallelBinCSR
   m::Int
   n::Int
   pids::Vector{Int64}
@@ -66,7 +67,7 @@ function ParallelBinCSR(rows::Vector{Int32}, cols::Vector{Int32}, pids::Vector{I
   csr = SparseBinMatrixCSR(rows, cols)
   npids  = length(pids)
   ranges = StepRange{Int,Int}[ 1+(i-1)*blocksize:npids*blocksize:size(csr,1) for i in 1:npids ]
-  pcsr   = ParallelBinCSR(csr.m, csr.n, pids, Future[], ranges, blocksize)
+  @compat pcsr = ParallelBinCSR(csr.m, csr.n, pids, Future[], ranges, blocksize)
   for i in 1:npids
     ref = @spawnat pids[i] fetch(csr)
     push!(pcsr.csrs, ref)
@@ -91,7 +92,7 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelBinCSR, x::SharedArray{Tx
   return nothing
 end
 
-function A_mul_B_part_ref{Tx}(y::SharedArray{Tx,1}, Aref::Future, x::SharedArray{Tx,1}, range::StepRange{Int,Int}, blocksize::Int)
+@compat function A_mul_B_part_ref{Tx}(y::SharedArray{Tx,1}, Aref::Future, x::SharedArray{Tx,1}, range::StepRange{Int,Int}, blocksize::Int)
   A = fetch(Aref)::SparseBinMatrixCSR
   A_mul_B_range!(y, A, x, range, blocksize)
   return nothing

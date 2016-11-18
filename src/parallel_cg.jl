@@ -1,3 +1,5 @@
+using Compat
+
 ## basic copyto function, sets F up on cg pid
 copyto(F::Any, pids::Vector{Int}) = F
 
@@ -44,7 +46,7 @@ function sub_prod!(x, mult, v)
 end
 
 ## function for calling with remote
-cg_AtA_ref(Aref::Future, b::AbstractVector{Float64}, lambda::Float64, tol::Float64, maxiter::Int=length(b)) = cg_AtA(fetch(Aref), b, lambda, tol=tol, maxiter=maxiter)
+@compat cg_AtA_ref(Aref::Future, b::AbstractVector{Float64}, lambda::Float64, tol::Float64, maxiter::Int=length(b)) = cg_AtA(fetch(Aref), b, lambda, tol=tol, maxiter=maxiter)
 
 ## p and z are parallelized (SharedArray)
 function cg_AtA(A::ParallelSBM, b::AbstractVector{Float64}, lambda::Float64;
