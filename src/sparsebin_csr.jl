@@ -83,7 +83,7 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelBinCSR, x::SharedArray{Tx
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          remotecall_wait(pid, A_mul_B_part_ref, y, A.csrs[p], x, A.mranges[p], A.blocksize)
+          remotecall_wait(A_mul_B_part_ref, pid, y, A.csrs[p], x, A.mranges[p], A.blocksize)
         end
       end
     end

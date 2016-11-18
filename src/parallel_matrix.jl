@@ -276,7 +276,7 @@ function A_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1}
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          remotecall_wait(pid, partmul_ref, y, A.sbms[p], A.logic[p], x)
+          remotecall_wait(partmul_ref, pid, y, A.sbms[p], A.logic[p], x)
         end
       end
     end
@@ -294,7 +294,7 @@ function At_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,1
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          remotecall_wait(pid, partmul_t_ref, y, A.sbms[p], A.logic[p], x)
+          remotecall_wait(partmul_t_ref, pid, y, A.sbms[p], A.logic[p], x)
         end
       end
     end
@@ -333,7 +333,7 @@ function AtA_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          remotecall_wait(pid, partmul_ref, tmp, A.sbms[p], A.logic[p], x)
+          remotecall_wait(partmul_ref, pid, tmp, A.sbms[p], A.logic[p], x)
         end
       end
     end
@@ -345,7 +345,7 @@ function AtA_mul_B!{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{Tx,
       pid = A.pids[p]
       if pid != myid() || np == 1
         @async begin
-          remotecall_wait(pid, partmul_t_ref, y, A.sbms[p], A.logic[p], tmp)
+          remotecall_wait(partmul_t_ref, pid, y, A.sbms[p], A.logic[p], tmp)
         end
       end
     end
@@ -365,7 +365,7 @@ function A_mul_B!_time{Tx}(y::SharedArray{Tx,1}, A::ParallelSBM, x::SharedArray{
         pid = A.pids[p]
         if pid != myid() || length(A.pids) == 1
           @async begin
-            ptime[p, i] += remotecall_fetch(pid, partmul_time, y, A.sbms[p], A.logic[p], x)
+            ptime[p, i] += remotecall_fetch(partmul_time, pid, y, A.sbms[p], A.logic[p], x)
           end
         end
       end

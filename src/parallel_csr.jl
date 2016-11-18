@@ -88,7 +88,7 @@ function pmult(nrows::Integer, Frefs, U, procs, mfun)
                         if idx > n
                             break
                         end
-                        results[:,idx] = remotecall_fetch(procs[p], mfun, Frefs[p], U[:,idx])
+                        results[:,idx] = remotecall_fetch(mfun, procs[p], Frefs[p], U[:,idx])
                     end
                 end
             end

@@ -161,9 +161,9 @@ function sample_latent_all2!(rel::Relation, dataRefs::Vector, procs::Vector{Int}
     for i in 1:Nprocs
       @async begin
         if mu_vector
-          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u, Lambda_u)
+          sample_u[:, ranges[i]] = remotecall_fetch(sample_latent_range_ref, procs[i], ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u, Lambda_u)
         else
-          sample_u[:, ranges[i]] = remotecall_fetch(procs[i], sample_latent_range_ref, ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u[:,ranges[i]], Lambda_u)
+          sample_u[:, ranges[i]] = remotecall_fetch(sample_latent_range_ref, procs[i], ranges[i], dataRefs[i], mode, rel.model.mean_value, sample_m, rel.model.alpha, mu_u[:,ranges[i]], Lambda_u)
         end
       end
     end
