@@ -12,17 +12,17 @@ assignToTest!(rd.relations[1], 50)
 
 ############ num_latent = 10 ############
 ## single threaded
-blas_set_num_threads(1)
+BLAS.set_num_threads(1)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=10);
 
-blas_set_num_threads(8)
+BLAS.set_num_threads(8)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=10);
 
-blas_set_num_threads(16)
+BLAS.set_num_threads(16)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=10);
 
 ## multi-threaded (1)
-blas_set_num_threads(1)
+BLAS.set_num_threads(1)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=10, latent_pids=[2], latent_blas_threads=1);
 
 ## multi-threaded (2)
@@ -30,13 +30,13 @@ r = macau(rd, burnin = 2, psamples = 2, num_latent=10, latent_pids=[2,3], latent
 r = macau(rd, burnin = 2, psamples = 2, num_latent=10, latent_pids=[2,3], latent_blas_threads=2);
 
 ############ num_latent = 30 ############
-blas_set_num_threads(1)
+BLAS.set_num_threads(1)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=30);
 
-blas_set_num_threads(2)
+BLAS.set_num_threads(2)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=30);
 
-blas_set_num_threads(4)
+BLAS.set_num_threads(4)
 r1 = macau(rd, burnin = 2, psamples = 2, num_latent=30);
 
 ## multi-threaded (1)
