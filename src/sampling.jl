@@ -121,8 +121,8 @@ function ConditionalNormalWishart(U::Matrix{Float64}, mu::Vector{Float64}, beta_
   nu_N   = nu + N
   beta_N = beta_0 + N
   mu_N   = (beta_0*mu + NU) / (beta_0 + N)
-  T_N    = inv(PDMat(Symmetric(Tinv + NS + beta_0 * mu * mu' - beta_N * mu_N * mu_N') ))
-  T_Nchol = cholfact(Symmetric(T_N))
+  T_N    = inv(Symmetric(Tinv + NS + beta_0 * mu * mu' - beta_N * mu_N * mu_N') )
+  T_Nchol = cholfact(T_N)
 
   NormalWishart(vec(mu_N), beta_N, T_Nchol, nu_N)
 end
