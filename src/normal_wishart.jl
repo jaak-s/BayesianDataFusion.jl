@@ -41,6 +41,6 @@ import Distributions.rand
 
 function rand(nw::NormalWishart)
     Lam = rand(Wishart(nw.nu, nw.Tchol))
-    mu = rand(MvNormal(nw.mu, full(inv(Hermitian(Lam))) ./ nw.kappa))
+    mu = rand(MvNormal(nw.mu, full(inv(Symmetric(Lam))) ./ nw.kappa))
     return (mu, Lam)
 end
