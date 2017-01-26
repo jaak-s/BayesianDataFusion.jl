@@ -121,6 +121,82 @@ result = macau(RD, burnin=100, psamples=400, clamp=[1.0, 5.0], num_latent=10)
 ```
 In most applications the performance of pure BPMF is weaker compared to Macau. This is also true in the case of MovieLens dataset.
 
+## Tensor factorization with side information
+Here is an example of factorization of 3-tensor on a toy data of `compound x cell_line x gene` where two of the modes have side information. We first generate the toy dataset:
+```julia
+using BayesianDataFusion
+using DataFrames
+
+## generating artificial data
+Ncompounds = 100
+Ncell_lines = 10
+Ngenes      = 50
+
+A = randn(Ncompounds,  2);
+B = randn(Ncell_lines, 2);
+C = randn(Ngenes, 2);
+
+X = Float64[ sum(A[i,:].*B[j,:].*C[k,:]) for i in 1:size(A,1), j in 1:size(B,1), k in 1:size(C,1)];
+
+## adding artificial data into DataFrame
+df = DataFrame(compound=Int64[], cell_line=Int64[], gene=Int64[], value=Float64[])
+for i=1:size(A,1), j=1:size(B,1), k=1:size(C,1)
+  push!(df, Any[i, j, k, X[i,j,k]])
+end
+
+## generating side information
+Fcompounds = A * randn(2, 5);
+Fgenes = C * randn(2, 10);
+```
+The dataframe object has an id for each mode and the last column gives the value of the tensor.
+```
+head(df)
+6×4 DataFrames.DataFrame
+│ Row │ compound │ cell_line │ gene │ value     │
+├─────┼──────────┼───────────┼──────┼───────────┤
+│ 1   │ 1        │ 1         │ 1    │ -0.112793 │
+│ 2   │ 1        │ 1         │ 2    │ 0.555784  │
+│ 3   │ 1        │ 1         │ 3    │ 0.116109  │
+│ 4   │ 1        │ 1         │ 4    │ 0.106436  │
+│ 5   │ 1        │ 1         │ 5    │ 0.661452  │
+│ 6   │ 1        │ 1         │ 6    │ -0.483896 │
+```
+
+Next we set up the 3-tensor model and add side information to `compound` and `gene` data
+```julia
+## creating the three entities (compounds and genes have side information)
+compound  = Entity("compound", F = Fcompounds);
+cell_line = Entity("cell_line");
+gene      = Entity("gene", F = Fgenes);
+
+## creating Tensor relation
+gene_expr = Relation(df, "GeneExpr", [compound, cell_line, gene], class_cut = 0.0)
+
+## setting noise precision of the observations (1 / variance)
+setPrecision!(gene_expr, 5.0)
+
+## assign 5000 values to test set
+assignToTest!(gene_expr, 5000)
+
+## the model with one 3-tensor
+RD = RelationData(gene_expr)
+
+## perform factorization
+result = macau(RD, burnin=100, psamples=900, num_latent=10)
+```
+The dataframe `result["predictions"]` gives the predictions on the test set.
+For this toy dataset `num_latent=10` is sufficient, for larger datasets it should be increased.
+The model we executed looks like this:
+```java
+julia> RD
+[Relations]
+  GeneExpr: compound--cell_line--gene, #known = 45000, #test = 5000, α = 5.00
+[Entities]
+  compound:    100 with 5 features (λ = sample)
+ cell_line:     10 with no features
+      gene:     50 with 10 features (λ = sample)
+```
+
 ## Multi-relational models
 Macau also provides factorization of models with multiple relations, where each entity can have also side information.
 Here is an example where we have 3 entities: `users`, `movies`, `books` with 2 relations `movie_ratings` and `book_ratings`.
